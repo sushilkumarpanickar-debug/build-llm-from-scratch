@@ -13,6 +13,7 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var systemStatus: DashboardStatus?
     @Published private(set) var brainStatus: BrainStatus?
     @Published private(set) var isConnected = false
+    @Published private(set) var connectionDetail = "Not configured"
 
     private var client: APIClient?
 
@@ -24,9 +25,12 @@ final class ChatViewModel: ObservableObject {
         do {
             client = try APIClient(baseURLString: baseURLString)
             errorMessage = nil
+            connectionDetail = "Connecting to \(client?.baseURL.host ?? "DAKSH")"
         } catch {
             client = nil
             isConnected = false
+            connectionDetail = error.localizedDescription
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -103,8 +107,11 @@ final class ChatViewModel: ObservableObject {
             documents = try await client.loadDocuments()
             skills = try await client.loadSkills()
             isConnected = true
+            connectionDetail = "Connected to \(client.baseURL.host ?? "DAKSH")"
         } catch {
             isConnected = false
+            connectionDetail = error.localizedDescription
+            errorMessage = error.localizedDescription
         }
     }
 

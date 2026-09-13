@@ -1,3 +1,10 @@
+# v0.15.1 - Native Local Connection Repair
+
+- Added the macOS App Transport Security local-network allowance required for
+  the native app to reach its explicitly permitted `127.0.0.1` DAKSH server.
+- Replaced ambiguous “ready” status with live endpoint-specific connection
+  feedback and surfaced failed status refreshes in the app.
+
 # v0.15.0 - Native Command Cockpit
 
 - Replaced the sparse native Chat page with a dense DAKSH command cockpit:

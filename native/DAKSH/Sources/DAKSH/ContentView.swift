@@ -20,6 +20,8 @@ struct ContentView: View {
                 messageCount: viewModel.messages.count,
                 isSending: viewModel.isSending,
                 history: viewModel.history,
+                isConnected: viewModel.isConnected,
+                connectionDetail: viewModel.connectionDetail,
                 selection: $section,
                 showSettings: $isShowingSettings,
                 newConversation: {
@@ -104,6 +106,8 @@ private struct CommandSidebar: View {
     let messageCount: Int
     let isSending: Bool
     let history: [HistoryInteraction]
+    let isConnected: Bool
+    let connectionDetail: String
     @Binding var selection: AppSection?
     @Binding var showSettings: Bool
     let newConversation: () -> Void
@@ -118,9 +122,9 @@ private struct CommandSidebar: View {
             } header: {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("DAKSH AI").font(.title3.weight(.bold))
-                    Text(isSending ? "PROCESSING" : "LOCAL SYSTEM READY")
+                    Text(isSending ? "PROCESSING" : (isConnected ? "CONNECTED" : "CONNECTION REQUIRED"))
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(isSending ? .orange : .green)
+                        .foregroundStyle(isSending ? .orange : (isConnected ? .green : .orange))
                 }
                 .padding(.vertical, 10)
             }
@@ -149,6 +153,12 @@ private struct CommandSidebar: View {
                 }
                 Button { showSettings = true } label: {
                     Label("Connection settings", systemImage: "gearshape")
+                }
+                Section("Connection") {
+                    Label(connectionDetail, systemImage: isConnected ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(isConnected ? .green : .orange)
+                        .lineLimit(2)
                 }
             }
         }
