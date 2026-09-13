@@ -13,10 +13,12 @@ from fastapi.responses import FileResponse, JSONResponse
 
 try:
     from .db import MEMORY_CATEGORIES, SCOPES, Store, utcnow
-    from . import ingestion, ollama_client, voice
+    from . import finance, ingestion, integrations, ollama_client, voice
 except ImportError:
+    import finance
     from db import MEMORY_CATEGORIES, SCOPES, Store, utcnow
     import ingestion
+    import integrations
     import ollama_client
     import voice
 
@@ -137,7 +139,7 @@ def create_app(data_dir=None):
             "ollama": bool(installed), "models": chat,
             "embedding_model": embedding_name,
             "speech": Path("/usr/bin/say").exists(), "transcription": _module_available("faster_whisper"),
-            "local_only": True,
+            "finance": True, "mcp_finance": True, "local_only": True,
         }
 
     @app.get("/api/state")
@@ -235,6 +237,21 @@ def create_app(data_dir=None):
             raise HTTPException(400, str(exc)) from exc
         except Exception as exc:
             raise HTTPException(502, f"Local indexing failed: {exc}") from exc
+
+    @app.get("/api/integrations")
+    def integration_catalog():
+        return {"integrations": integrations.catalog(), "auto_install": False, "default_access": "disabled unless built in"}
+
+    @app.post("/api/finance/analyze", dependencies=[Depends(authorize)])
+    async def analyze_finance(scope: str = Form("Personal"), file: UploadFile = File(...)):
+        scope = require_scope(scope)
+        data = await file.read(finance.MAX_FILE_BYTES + 1)
+        try:
+            result = finance.analyze_bytes(file.filename or "finance.csv", data)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        store.audit(scope, "finance_analyzed", f"{result['filename']}; {result['size_bytes']} bytes")
+        return result
 
     @app.delete("/api/documents/{document_id}", dependencies=[Depends(authorize)])
     def delete_document(document_id: int, scope: str = "Personal"):

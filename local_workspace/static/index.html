@@ -19,6 +19,7 @@
       <button data-view="knowledge"><i>▱</i>Memory</button>
       <button data-view="chat"><i>□</i>Conversations <b id="nav-chat-count">0</b></button>
       <button data-view="documents"><i>❉</i>Knowledge Base</button>
+      <button data-view="finance"><i>₹</i>Finance</button>
       <button data-view="settings"><i>⌁</i>Tools &amp; Skills</button>
       <button data-view="tasks"><i>⌘</i>Workflows</button>
     </nav>
@@ -75,7 +76,7 @@
         <article class="hud-card quick-commands">
           <div class="card-head"><span>QUICK COMMANDS</span></div>
           <button data-view="tasks"><i>＋</i> Start New Task</button>
-          <button data-view="dashboard" data-message="Calendar connection is planned for a later phase."><i>▤</i> Open Calendar</button>
+          <button data-view="finance"><i>₹</i> Analyse Finance File</button>
           <button id="quick-voice"><i>♬</i> Start Voice Chat</button>
           <button data-view="tasks"><i>▷</i> Run Workflow</button>
         </article>
@@ -114,9 +115,15 @@
       <form id="task-form" class="task-form"><input id="task-prompt" maxlength="8000" required placeholder="State the outcome, constraints and deadline…"><button class="primary">GENERATE PLAN</button></form><div id="task-list" class="cards task-grid"></div>
     </section>
 
+    <section id="finance" class="view" hidden>
+      <div class="page-intro"><div><span>FINANCE INTELLIGENCE</span><h1>Analyse financial files locally.</h1></div><p>Deterministic profiling first; DAKSH does not invent figures or modify the source file.</p></div>
+      <div class="two-column"><form id="finance-form" class="hud-card upload-zone"><span class="upload-icon">₹</span><h2>Profile a finance file</h2><p>CSV or XLSX, up to 25 MB. Data remains on this Mac.</p><input id="finance-file" type="file" accept=".csv,.xlsx" required><button class="primary">ANALYSE LOCALLY</button><div id="finance-progress" class="progress" hidden>Calculating deterministic totals…</div></form><article class="hud-card finance-results"><div class="card-head"><span>ANALYSIS RESULTS</span><b>READ ONLY</b></div><div id="finance-results"><p class="muted">Choose a workbook or CSV to inspect rows, columns, totals, averages, ranges, and recognized finance fields.</p></div></article></div>
+    </section>
+
     <section id="settings" class="view" hidden>
       <div class="page-intro"><div><span>TOOLS &amp; SKILLS</span><h1>Local capability and controls.</h1></div><p>Only verified services are shown online.</p></div>
       <div class="two-column"><article class="hud-card form-card"><div class="card-head"><span>RUNTIME CAPABILITIES</span></div><div id="capabilities"></div><button id="refresh">RUN SYSTEM SCAN</button></article><form id="settings-form" class="hud-card form-card"><div class="card-head"><span>LOCAL SETTINGS</span></div><label for="settings-model">Chat model</label><select id="settings-model"></select><label for="embedding-model">Embedding model</label><select id="embedding-model"></select><label for="stt-model">Whisper model</label><select id="stt-model"><option>tiny</option><option>base</option><option>small</option></select><label class="toggle"><input id="speech-enabled" type="checkbox"> Speak assistant replies with macOS voice</label><button class="primary">SAVE SETTINGS</button></form></div>
+      <article class="hud-card connector-panel"><div class="card-head"><span>MCP &amp; CONNECTOR CONTROL PLANE</span><b>NO AUTO-INSTALL</b></div><div id="integrations" class="connector-grid"></div></article>
     </section>
 
     <footer class="command-dock"><div><span>⌖</span><small>Location<strong>Local Mac</strong></small></div><div><span>◌</span><small>Privacy<strong>Private</strong></small></div><div><span>⌁</span><small>Network<strong>Loopback</strong></small></div><i></i><button id="dock-mic"><b>◉</b><span>TALK TO DAKSH<small id="dock-status">Tap to speak</small></span></button><i></i><button data-view="chat" class="briefing">▷ Executive Briefing</button></footer>

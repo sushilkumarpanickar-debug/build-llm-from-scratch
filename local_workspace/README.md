@@ -32,6 +32,8 @@ Open <http://127.0.0.1:9001>. The server deliberately binds only to the loopback
 - Local mission planning and status tracking.
 - Live health matrix for inference, embeddings, voice, speech, database, and network boundary.
 - A command-center dashboard with AI core status, live intelligence, active local agents, mission timeline, system monitor, memory insights, model status, quick commands, and a persistent voice dock.
+- Deterministic read-only finance profiling for CSV/XLSX files, plus a local stdio MCP tool constrained to an approved finance folder.
+- A connector control plane that distinguishes built-in, optional, later, overlapping, and excluded integrations without auto-installing them.
 
 Runtime data is saved under `local_workspace/data/` and excluded from Git. The SQLite database is not encrypted; rely on macOS account and disk encryption for device-level protection. Domain separation is contextual inside a single-user application, not user authentication.
 
@@ -50,6 +52,10 @@ The first microphone transcription downloads the selected open Whisper model to 
 ```
 
 Tests use temporary databases and mocked model output. Live validation additionally checks the installed Ollama chat model, embeddings, one document-grounded answer, a faster-whisper transcription, and the macOS speech command.
+
+## Local finance MCP
+
+Copy `config/mcp.example.json` into the configuration area of an MCP-compatible client and replace `DAKSH_FINANCE_ROOT` with one folder that DAKSH may read. The server exposes only `finance_analyze_file`; it accepts CSV/XLSX, refuses paths outside that folder, and never edits the source. See `MCP_AND_SKILLS_REVIEW.md` for the connector decisions and boundaries.
 
 ## Safety boundary
 

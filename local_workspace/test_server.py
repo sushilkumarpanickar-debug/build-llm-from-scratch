@@ -1,3 +1,4 @@
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -5,7 +6,9 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from local_workspace import ingestion
+from openpyxl import Workbook
+
+from local_workspace import finance, finance_mcp, ingestion
 from local_workspace.server import TOKEN, create_app
 
 
@@ -36,6 +39,8 @@ class WorkspaceTest(unittest.TestCase):
         self.assertIn("LIVE INTELLIGENCE FEED", page.text)
         self.assertIn("MISSION TIMELINE", page.text)
         self.assertIn("TALK TO DAKSH", page.text)
+        self.assertIn("FINANCE INTELLIGENCE", page.text)
+        self.assertIn("MCP &amp; CONNECTOR CONTROL PLANE", page.text)
         self.assertEqual(self.client.get("/snns_logo.png").content[:8], b"\x89PNG\r\n\x1a\n")
         self.assertTrue(self.client.get("/api/health").json()["local_only"])
         self.assertEqual(self.client.get("/api/state", headers={"Host": "evil.example"}).status_code, 403)
@@ -114,6 +119,41 @@ class WorkspaceTest(unittest.TestCase):
         self.assertEqual(task.status_code, 200)
         status = self.post("/api/tasks/status", {"id":task.json()["id"],"status":"completed"})
         self.assertEqual(status.status_code, 200)
+
+    def test_finance_analysis_and_connector_catalog(self):
+        csv_data = b"Date,Sales,Expense,Balance\n2026-09-01,1000,400,600\n2026-09-02,1250,500,1350\n"
+        response = self.client.post(
+            "/api/finance/analyze", headers=self.headers, data={"scope": "Tiwarta CFO"},
+            files={"file": ("ledger.csv", csv_data, "text/csv")},
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        columns = {item["name"]: item for item in response.json()["sheets"][0]["numeric_columns"]}
+        self.assertEqual(columns["Sales"]["sum"], 2250.0)
+        self.assertEqual(columns["Expense"]["role"], "outflow")
+        catalog = self.client.get("/api/integrations").json()
+        self.assertFalse(catalog["auto_install"])
+        self.assertEqual(catalog["integrations"][0]["id"], "daksh-finance")
+
+    def test_finance_xlsx_and_mcp_allowlist(self):
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Cash Flow"
+        sheet.append(["Month", "Collections", "Payments"])
+        sheet.append(["September", 5000, 3200])
+        payload = io.BytesIO()
+        workbook.save(payload)
+        result = finance.analyze_bytes("cash-flow.xlsx", payload.getvalue())
+        self.assertEqual(result["sheets"][0]["numeric_columns"][0]["sum"], 5000.0)
+        self.assertEqual(result["sheets"][0]["numeric_columns"][0]["role"], "inflow")
+        root = Path(self.temp.name) / "finance"
+        root.mkdir()
+        source = root / "ledger.csv"
+        source.write_text("Debit,Credit\n50,75\n", encoding="utf-8")
+        message = {"jsonrpc": "2.0", "id": 7, "method": "tools/call", "params": {"name": "finance_analyze_file", "arguments": {"path": str(source)}}}
+        mcp_result = finance_mcp.handle(message, root)
+        self.assertFalse(mcp_result["result"]["isError"])
+        blocked = finance_mcp.handle({**message, "params": {"name": "finance_analyze_file", "arguments": {"path": __file__}}}, root)
+        self.assertTrue(blocked["result"]["isError"])
 
 
 if __name__ == "__main__":

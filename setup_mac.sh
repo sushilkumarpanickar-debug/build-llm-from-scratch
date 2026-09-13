@@ -28,8 +28,8 @@ fi
 "$PYTHON_BIN" -m venv --system-site-packages .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/pip install -r requirements-local.txt
-mkdir -p local_workspace/data/documents
-chmod 700 local_workspace/data local_workspace/data/documents
+mkdir -p local_workspace/data/documents local_workspace/data/finance
+chmod 700 local_workspace/data local_workspace/data/documents local_workspace/data/finance
 
 print ""
 print "Local environment is ready."

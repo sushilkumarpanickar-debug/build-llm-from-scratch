@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "daksh-finance": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "local_workspace.finance_mcp"],
+      "env": {
+        "DAKSH_FINANCE_ROOT": "/absolute/path/to/your/approved/finance-folder"
+      }
+    }
+  }
+}

@@ -3,6 +3,7 @@
 const $ = id => document.getElementById(id);
 let state;
 let health = {};
+let integrationState = [];
 let busy = false;
 let recorder;
 let audioChunks = [];
@@ -57,6 +58,7 @@ function show(name, message = '', trigger = null) {
 function render() {
   renderModels(); renderConversations(); renderMessages(); renderNotes();
   renderDocuments(); renderTasks(); renderSettings(); renderDashboard(); renderCapabilities();
+  renderIntegrations();
 }
 
 function renderModels() {
@@ -225,7 +227,7 @@ function renderDashboard() {
   addAgent('◖', 'Voice Agent', health.transcription ? 'Ready' : 'Unavailable', health.transcription ? '' : 'offline');
   addAgent('◇', 'Mission Planner', `${openTasks.length} open`, modelCount ? 'standby' : 'offline');
   addAgent('◉', 'System Agent', health.database ? 'SQLite online' : 'Database offline', health.database ? '' : 'offline');
-  addAgent('⌁', 'Action Agent', 'Phase 2', 'offline');
+  addAgent('₹', 'Finance Agent', health.finance ? 'Read-only ready' : 'Unavailable', health.finance ? '' : 'offline');
 
   $('timeline').replaceChildren();
   const events = state.tasks.slice(0, 3).map(task => ({time: new Date(task.created).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}), title: task.title, status: task.status.replace('_', ' ')}));
@@ -262,6 +264,8 @@ function renderCapabilities() {
     ['Local voice input', health.transcription ? 'FASTER-WHISPER' : 'OFFLINE', !!health.transcription],
     ['macOS spoken replies', health.speech ? 'SAY READY' : 'OFFLINE', !!health.speech],
     ['Persistent workspace', health.database ? 'SQLITE READY' : 'OFFLINE', !!health.database],
+    ['Deterministic finance skill', health.finance ? 'CSV / XLSX READY' : 'OFFLINE', !!health.finance],
+    ['DAKSH Finance MCP', health.mcp_finance ? 'STDIO READY' : 'OFFLINE', !!health.mcp_finance],
     ['Network boundary', health.local_only ? '127.0.0.1 ONLY' : 'CHECK REQUIRED', !!health.local_only]
   ];
   entries.forEach(([name, status, live]) => {
@@ -270,10 +274,48 @@ function renderCapabilities() {
   });
 }
 
+function renderIntegrations() {
+  const root = $('integrations');
+  root.replaceChildren();
+  integrationState.forEach(item => {
+    const card = el('article', undefined, `connector ${item.decision}`);
+    const top = el('div', undefined, 'connector-title');
+    top.append(el('strong', item.name), el('b', item.decision.replace('_', ' ').toUpperCase()));
+    card.append(top, el('p', item.description), el('small', `${item.access} · ${item.cost} · ${item.installed ? 'available on this Mac' : 'not active'}`));
+    root.append(card);
+  });
+}
+
+function renderFinance(result) {
+  const root = $('finance-results');
+  root.replaceChildren();
+  root.append(el('h2', result.filename), el('p', result.method, 'muted'));
+  result.sheets.forEach(sheet => {
+    const section = el('section', undefined, 'finance-sheet');
+    section.append(el('h3', sheet.name), el('small', `${sheet.rows.toLocaleString()} rows · ${sheet.columns} columns`));
+    if (sheet.numeric_columns.length) {
+      const table = document.createElement('table');
+      const head = document.createElement('tr');
+      ['Column', 'Role', 'Count', 'Sum', 'Average', 'Min', 'Max'].forEach(label => head.append(el('th', label)));
+      table.append(head);
+      sheet.numeric_columns.forEach(column => {
+        const row = document.createElement('tr');
+        [column.name, column.role, column.count, column.sum, column.average, column.minimum, column.maximum].forEach(value => row.append(el('td', typeof value === 'number' ? value.toLocaleString(undefined, {maximumFractionDigits: 2}) : value)));
+        table.append(row);
+      });
+      section.append(table);
+    }
+    sheet.warnings.forEach(warning => section.append(el('p', warning, 'finance-warning')));
+    root.append(section);
+  });
+}
+
 async function scan() {
   try {
-    const response = await fetch('/api/health'); health = await response.json();
-    renderSettings(); renderCapabilities(); renderDashboard();
+    const [healthResponse, integrationsResponse] = await Promise.all([fetch('/api/health'), fetch('/api/integrations')]);
+    health = await healthResponse.json();
+    integrationState = (await integrationsResponse.json()).integrations || [];
+    renderSettings(); renderCapabilities(); renderDashboard(); renderIntegrations();
   } catch (error) { notice('System scan failed: ' + error.message, true); }
 }
 
@@ -369,6 +411,18 @@ $('document-form').addEventListener('submit', async event => {
     event.target.reset(); await load(); notice(result.duplicate ? 'This file was already indexed.' : `${file.name} is ready for local retrieval.`);
   } catch (error) { notice(error.message, true); }
   finally { $('upload-progress').hidden = true; event.submitter.disabled = false; }
+});
+
+$('finance-form').addEventListener('submit', async event => {
+  event.preventDefault(); const file = $('finance-file').files[0]; if (!file) return;
+  const form = new FormData(); form.append('scope', currentScope()); form.append('file', file);
+  $('finance-progress').hidden = false; event.submitter.disabled = true; notice('Analysing figures locally…');
+  try {
+    const response = await fetch('/api/finance/analyze', {method: 'POST', headers: {'X-Workspace-Token': state.token}, body: form});
+    const result = await response.json(); if (!response.ok) throw Error(result.error || 'Finance analysis failed');
+    renderFinance(result); notice(`${file.name} was analysed without modifying the file.`);
+  } catch (error) { notice(error.message, true); }
+  finally { $('finance-progress').hidden = true; event.submitter.disabled = false; }
 });
 
 $('task-form').addEventListener('submit', async event => {
