@@ -1,3 +1,11 @@
+# v0.14.1 - Installed Native App and Icon Fix
+
+- Corrected the macOS target resource phase so the DAKSH icon is included in
+  the built application bundle and recognized by Finder and the Dock.
+- Tightened the Chat workspace header so active conversation content and
+  controls remain the focus on first launch.
+- Installed the verified native build at `~/Applications/DAKSH AI.app`.
+
 # v0.14.0 - Native Workspace Navigation
 
 - Rebuilt the native DAKSH client from a single command-center screen into

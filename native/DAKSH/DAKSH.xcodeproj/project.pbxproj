@@ -24,6 +24,7 @@
 		100000000000000000000016 /* VoiceInputController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* VoiceInputController.swift */; };
 		100000000000000000000017 /* daksh-logo.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000007 /* daksh-logo.png */; };
 		100000000000000000000018 /* daksh-mark.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000008 /* daksh-mark.png */; };
+		100000000000000000000019 /* DAKSH.icns in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000009 /* DAKSH.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -187,7 +188,6 @@
 			files = (
 				100000000000000000000007 /* daksh-logo.png in Resources */,
 				100000000000000000000008 /* daksh-mark.png in Resources */,
-				100000000000000000000009 /* DAKSH.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -197,6 +197,7 @@
 			files = (
 				100000000000000000000017 /* daksh-logo.png in Resources */,
 				100000000000000000000018 /* daksh-mark.png in Resources */,
+				100000000000000000000019 /* DAKSH.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

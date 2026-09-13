@@ -171,7 +171,11 @@ private struct CommandCenter: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 20) {
-                        CoreHero(isProcessing: viewModel.isSending, isConnected: viewModel.isConnected)
+                        CoreHero(
+                            isProcessing: viewModel.isSending,
+                            isConnected: viewModel.isConnected,
+                            messageCount: viewModel.messages.count
+                        )
                         StatusGrid(
                             status: viewModel.systemStatus,
                             brain: viewModel.brainStatus,
@@ -236,32 +240,36 @@ private struct CommandCenter: View {
 private struct CoreHero: View {
     let isProcessing: Bool
     let isConnected: Bool
+    let messageCount: Int
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(.ultraThinMaterial)
-                .overlay(RoundedRectangle(cornerRadius: 24).stroke(.cyan.opacity(0.35)))
-            HStack(spacing: 24) {
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(.cyan.opacity(0.35)))
+            HStack(spacing: 14) {
                 ZStack {
-                    Circle().stroke(.cyan.opacity(0.25), lineWidth: 22).frame(width: 126, height: 126)
-                    Circle().trim(from: 0.08, to: isProcessing ? 0.94 : 0.72).stroke(.cyan, style: StrokeStyle(lineWidth: 4, lineCap: .round)).rotationEffect(.degrees(-90)).frame(width: 104, height: 104)
+                    Circle().stroke(.cyan.opacity(0.25), lineWidth: 12).frame(width: 68, height: 68)
+                    Circle().trim(from: 0.08, to: isProcessing ? 0.94 : 0.72).stroke(.cyan, style: StrokeStyle(lineWidth: 3, lineCap: .round)).rotationEffect(.degrees(-90)).frame(width: 58, height: 58)
                     Image("daksh-mark", bundle: dakshLogoBundle)
                         .resizable()
                         .scaledToFit()
-                        .padding(10)
+                        .padding(6)
                         .symbolEffect(.pulse, isActive: isProcessing)
                 }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("DAKSH AI").font(.system(size: 32, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("DAKSH AI").font(.title2.weight(.bold)).foregroundStyle(.white)
                     Text(isProcessing ? "PROCESSING YOUR REQUEST" : (isConnected ? "PRIVATE LOCAL AI CORE" : "CONNECTING TO DAKSH"))
                         .font(.caption.weight(.bold)).tracking(1.4).foregroundStyle(.cyan)
-                    Text("Local model · iCloud memory · Tailnet access")
-                        .font(.subheadline).foregroundStyle(.white.opacity(0.72))
+                    Text("\(messageCount) messages in this session · local model · private memory")
+                        .font(.caption).foregroundStyle(.white.opacity(0.72))
                 }
                 Spacer()
+                Image(systemName: isConnected ? "lock.shield.fill" : "exclamationmark.triangle.fill")
+                    .foregroundStyle(isConnected ? .mint : .orange)
+                    .font(.title2)
             }
-            .padding(24)
+            .padding(16)
         }
         .frame(maxWidth: 900)
     }
