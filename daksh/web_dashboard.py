@@ -2,9 +2,9 @@
 DAKSH Web Dashboard - J.A.R.V.I.S-Style Web Interface
 """
 
+from pathlib import Path
+
 from flask import Flask, jsonify, render_template, request
-import json
-from datetime import datetime
 
 from daksh.interface import DAKSH, DAKSHConfig, InteractionMode
 from scripts.setup import setup_llm_providers
@@ -15,7 +15,12 @@ def create_daksh_dashboard() -> Flask:
     """
     Create Flask app for DAKSH web dashboard.
     """
-    app = Flask(__name__)
+    project_root = Path(__file__).resolve().parent.parent
+    app = Flask(
+        __name__,
+        template_folder=str(project_root / "templates"),
+        static_folder=str(project_root / "static"),
+    )
     
     # Initialize DAKSH
     daksh_config = DAKSHConfig(
@@ -42,13 +47,20 @@ def create_daksh_dashboard() -> Flask:
     @app.route('/api/daksh/interact', methods=['POST'])
     def interact():
         """Process user interaction."""
-        data = request.json
-        user_input = data.get('input', '')
-        input_type = data.get('type', 'text')  # text or voice
-        
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+
+        user_input = data.get('input', '').strip()
+        input_type = data.get('type', 'text')
+
         if not user_input:
             return jsonify({"error": "Empty input"}), 400
-        
+        if len(user_input) > 10_000:
+            return jsonify({"error": "Input exceeds the 10,000 character limit"}), 400
+        if input_type not in {"text", "voice"}:
+            return jsonify({"error": "Unsupported input type"}), 400
+
         interaction = daksh.process_input(user_input, input_type)
         
         return jsonify({
@@ -90,7 +102,7 @@ def create_daksh_dashboard() -> Flask:
     @app.route('/api/daksh/history')
     def get_history():
         """Get interaction history."""
-        limit = request.args.get('limit', 10, type=int)
+        limit = min(max(request.args.get('limit', 50, type=int) or 50, 1), 100)
         
         history = [
             {

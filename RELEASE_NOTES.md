@@ -1,3 +1,12 @@
+# v0.3.0 - DAKSH Web App
+
+- Rebuilt the dashboard as a responsive ChatGPT-style chat application for
+  macOS and iPhone browsers.
+- Added conversation-history restore, request validation, local-system status,
+  and a new-conversation control.
+- Added PWA metadata and an offline app shell for installable mobile access.
+- Fixed Flask template and static-asset resolution for the repository layout.
+
 # v0.2.0 - Local-First DAKSH
 
 - Added a local-first Ollama routing policy with `qwen2.5:3b` as the default

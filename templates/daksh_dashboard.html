@@ -2,415 +2,90 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DAKSH - Digital Assistant for Knowledge and Smart Handling</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+    <title>DAKSH</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #00ff00;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-
-        .container {
-            display: flex;
-            height: 100vh;
-        }
-
-        .sidebar {
-            width: 25%;
-            background: rgba(10, 14, 39, 0.9);
-            border-right: 2px solid #00ff00;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            background: rgba(10, 14, 39, 0.95);
-            border-bottom: 2px solid #00ff00;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
-        }
-
-        .header h1 {
-            font-size: 2em;
-            text-shadow: 0 0 10px #00ff00;
-            margin-bottom: 5px;
-            letter-spacing: 2px;
-        }
-
-        .header p {
-            font-size: 0.9em;
-            color: #00ff00;
-            opacity: 0.7;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 20px;
-            background: rgba(20, 24, 49, 0.9);
-            border-bottom: 1px solid #00ff00;
-            font-size: 0.85em;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            animation: pulse 1s infinite;
-        }
-
-        .status-dot.active {
-            background: #00ff00;
-            box-shadow: 0 0 10px #00ff00;
-        }
-
-        .status-dot.inactive {
-            background: #ff0000;
-            animation: none;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .chat-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .message {
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 3px solid #00ff00;
-            animation: slideIn 0.3s ease-out;
-            font-size: 0.95em;
-            line-height: 1.5;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .user-message {
-            background: rgba(0, 100, 0, 0.2);
-            margin-left: 40px;
-            border-left-color: #00aa00;
-        }
-
-        .daksh-message {
-            background: rgba(0, 50, 100, 0.2);
-            margin-right: 40px;
-            border-left-color: #00ffff;
-            text-shadow: 0 0 5px #00ffff;
-        }
-
-        .input-area {
-            padding: 20px;
-            background: rgba(10, 14, 39, 0.95);
-            border-top: 2px solid #00ff00;
-            display: flex;
-            gap: 10px;
-        }
-
-        .input-group {
-            flex: 1;
-            display: flex;
-            gap: 10px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            background: rgba(20, 24, 49, 0.9);
-            border: 2px solid #00ff00;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            font-size: 1em;
-            border-radius: 3px;
-            transition: all 0.3s;
-        }
-
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #00ffff;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-        }
-
-        input[type="text"]::placeholder {
-            color: #00ff00;
-            opacity: 0.5;
-        }
-
-        button {
-            padding: 12px 20px;
-            background: rgba(0, 255, 0, 0.1);
-            border: 2px solid #00ff00;
-            color: #00ff00;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            border-radius: 3px;
-            transition: all 0.3s;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-
-        button:hover {
-            background: rgba(0, 255, 0, 0.2);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-            transform: translateY(-2px);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        .voice-btn {
-            border-color: #ff0000;
-            color: #ff0000;
-        }
-
-        .voice-btn:hover {
-            background: rgba(255, 0, 0, 0.2);
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
-        }
-
-        .sidebar-section {
-            margin-bottom: 30px;
-        }
-
-        .sidebar-title {
-            font-size: 0.9em;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #00ff00;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .sidebar-item {
-            padding: 8px 0;
-            font-size: 0.85em;
-            cursor: pointer;
-            transition: all 0.3s;
-            padding-left: 10px;
-            border-left: 2px solid transparent;
-        }
-
-        .sidebar-item:hover {
-            border-left-color: #00ff00;
-            padding-left: 15px;
-            text-shadow: 0 0 5px #00ff00;
-        }
-
-        .stat-value {
-            color: #00ffff;
-            font-weight: bold;
-        }
-
-        .loading {
-            display: inline-block;
-            animation: blink 0.7s infinite;
-        }
-
-        @keyframes blink {
-            0%, 50%, 100% { opacity: 1; }
-            25%, 75% { opacity: 0.3; }
-        }
-
-        .scrollbar {
-            scrollbar-width: thin;
-            scrollbar-color: #00ff00 #1a1f3a;
-        }
-
-        .scrollbar::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .scrollbar::-webkit-scrollbar-track {
-            background: #1a1f3a;
-        }
-
-        .scrollbar::-webkit-scrollbar-thumb {
-            background: #00ff00;
-            border-radius: 4px;
-        }
+        :root { color-scheme: dark; --bg:#111827; --panel:#1f2937; --line:#374151; --text:#f9fafb; --muted:#9ca3af; --accent:#10a37f; --user:#2563eb; }
+        * { box-sizing: border-box; }
+        body { margin:0; font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); }
+        .app { height:100dvh; display:grid; grid-template-columns:280px minmax(0,1fr); }
+        aside { background:#0b1220; border-right:1px solid var(--line); padding:20px; overflow:auto; }
+        .brand { font-weight:700; font-size:22px; letter-spacing:.04em; }
+        .subtitle { color:var(--muted); font-size:13px; margin:2px 0 28px; }
+        .new-chat { width:100%; border:1px solid var(--line); border-radius:8px; color:var(--text); background:transparent; padding:10px; text-align:left; cursor:pointer; }
+        .section { border-top:1px solid var(--line); margin-top:24px; padding-top:18px; }
+        .section h2 { font-size:12px; letter-spacing:.08em; color:var(--muted); margin:0 0 10px; text-transform:uppercase; }
+        .stat { display:flex; justify-content:space-between; gap:12px; padding:6px 0; font-size:14px; }
+        .value { color:#6ee7b7; text-align:right; overflow-wrap:anywhere; }
+        main { min-width:0; display:flex; flex-direction:column; }
+        header { height:60px; display:flex; align-items:center; padding:0 22px; border-bottom:1px solid var(--line); }
+        header strong { font-size:15px; } #connection { margin-left:auto; color:#6ee7b7; font-size:13px; }
+        #chat { width:min(820px,100%); flex:1; align-self:center; overflow:auto; padding:24px 20px 130px; }
+        .empty { min-height:60%; display:grid; place-content:center; text-align:center; color:var(--muted); gap:8px; } .empty h1 { color:var(--text); font-size:28px; margin:0; }
+        .message { display:grid; grid-template-columns:32px minmax(0,1fr); gap:14px; padding:18px 0; border-bottom:1px solid rgba(55,65,81,.55); }
+        .avatar { width:30px; height:30px; border-radius:6px; display:grid; place-items:center; font-size:12px; font-weight:700; background:var(--accent); }
+        .user .avatar { background:var(--user); } .content { white-space:pre-wrap; overflow-wrap:anywhere; } .meta { color:var(--muted); font-size:12px; margin-top:7px; }
+        form { width:min(820px,calc(100% - 40px)); align-self:center; display:flex; gap:10px; padding:14px; margin:0 0 16px; border:1px solid var(--line); background:var(--panel); border-radius:12px; box-shadow:0 8px 32px #0004; }
+        textarea { resize:none; min-height:26px; max-height:180px; flex:1; border:0; outline:0; background:transparent; color:var(--text); font:inherit; }
+        button { border:0; border-radius:8px; padding:8px 13px; background:var(--accent); color:#fff; cursor:pointer; font:inherit; } button:disabled { opacity:.5; cursor:not-allowed; }
+        .notice { color:var(--muted); font-size:12px; text-align:center; padding:0 20px 12px; }
+        @media (max-width:700px) { .app { display:block; } aside { display:none; } header { padding:0 16px; } #chat { padding:16px 14px 110px; } form { width:calc(100% - 24px); margin-bottom:10px; } .message { gap:10px; padding:15px 0; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="sidebar scrollbar">
-            <div class="sidebar-section">
-                <div class="sidebar-title">System Status</div>
-                <div class="sidebar-item">
-                    Status: <span class="stat-value" id="status">IDLE</span>
-                </div>
-                <div class="sidebar-item">
-                    Voice: <span class="stat-value" id="voice-status">Ready</span>
-                </div>
-                <div class="sidebar-item">
-                    Interactions: <span class="stat-value" id="interaction-count">0</span>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-title">LLM Router</div>
-                <div class="sidebar-item">
-                    Provider: <span class="stat-value" id="llm-provider">Auto</span>
-                </div>
-                <div class="sidebar-item">
-                    Skills Used: <span class="stat-value" id="skills-used">--</span>
-                </div>
-                <div class="sidebar-item">
-                    LLM Used: <span class="stat-value" id="llm-used">--</span>
-                </div>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-title">Recent Commands</div>
-                <div id="command-history"></div>
-            </div>
-        </div>
-
-        <div class="main-content">
-            <div class="header">
-                <h1>⚡ DAKSH ⚡</h1>
-                <p>Digital Assistant for Knowledge and Smart Handling</p>
-            </div>
-
-            <div class="status-bar">
-                <div class="status-item">
-                    <div class="status-dot active"></div>
-                    System Online
-                </div>
-                <div class="status-item">
-                    <div class="status-dot active" id="voice-dot"></div>
-                    Voice Recognition
-                </div>
-                <div class="status-item">
-                    <div class="status-dot active" id="tts-dot"></div>
-                    Text-to-Speech
-                </div>
-            </div>
-
-            <div class="chat-area scrollbar" id="chatArea"></div>
-
-            <div class="input-area">
-                <div class="input-group">
-                    <input type="text" id="userInput" placeholder="Speak or type your command..." autofocus>
-                    <button id="sendBtn">Send</button>
-                    <button class="voice-btn" id="voiceBtn">🎤 Voice</button>
-                </div>
-            </div>
-        </div>
+    <div class="app">
+        <aside>
+            <div class="brand">DAKSH</div>
+            <div class="subtitle">Your private local assistant</div>
+            <button class="new-chat" type="button" id="newChat">+ New conversation</button>
+            <div class="section"><h2>System</h2><div class="stat"><span>Status</span><span class="value" id="status">Checking</span></div><div class="stat"><span>Conversations</span><span class="value" id="interactions">0</span></div></div>
+            <div class="section"><h2>Routing</h2><div class="stat"><span>Provider</span><span class="value" id="provider">Local</span></div><div class="stat"><span>Cloud fallback</span><span class="value">Disabled by default</span></div></div>
+        </aside>
+        <main>
+            <header><strong>DAKSH</strong><span id="connection">Connecting...</span></header>
+            <section id="chat" aria-live="polite"></section>
+            <form id="composer"><textarea id="input" aria-label="Message DAKSH" placeholder="Message DAKSH" rows="1" autofocus></textarea><button id="send" type="submit">Send</button></form>
+            <div class="notice">Private local model. Cloud fallback remains disabled unless you explicitly enable it.</div>
+        </main>
     </div>
-
     <script>
-        const chatArea = document.getElementById('chatArea');
-        const userInput = document.getElementById('userInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const voiceBtn = document.getElementById('voiceBtn');
-
-        // Send message
-        sendBtn.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        async function sendMessage() {
-            const input = userInput.value.trim();
-            if (!input) return;
-
-            // Display user message
-            addMessage(input, 'user');
-            userInput.value = '';
-
-            // Send to DAKSH
+        const chat = document.querySelector('#chat'), input = document.querySelector('#input'), send = document.querySelector('#send');
+        const escapeText = value => document.createTextNode(value || '');
+        function addMessage(text, role, time = '') {
+            const message = document.createElement('article'); message.className = `message ${role}`;
+            const avatar = document.createElement('div'); avatar.className = 'avatar'; avatar.textContent = role === 'user' ? 'You' : 'D';
+            const body = document.createElement('div'); const content = document.createElement('div'); content.className = 'content'; content.append(escapeText(text));
+            body.append(content); if (time) { const meta = document.createElement('div'); meta.className = 'meta'; meta.textContent = new Date(time).toLocaleString(); body.append(meta); }
+            message.append(avatar, body); chat.append(message); chat.scrollTop = chat.scrollHeight;
+        }
+        function showEmpty() { chat.replaceChildren(); const empty = document.createElement('div'); empty.className = 'empty'; empty.innerHTML = '<h1>How can I help?</h1><span>DAKSH runs on your Mac and stays private on your Tailnet.</span>'; chat.append(empty); }
+        async function updateStatus() {
+            const response = await fetch('/api/daksh/status'); if (!response.ok) throw new Error('Status unavailable');
+            const data = await response.json(); document.querySelector('#status').textContent = data.status || 'Ready'; document.querySelector('#interactions').textContent = data.interactions ?? 0; document.querySelector('#connection').textContent = 'Local system ready';
+        }
+        async function loadHistory() {
+            const response = await fetch('/api/daksh/history?limit=100'); if (!response.ok) throw new Error('History unavailable');
+            const {history} = await response.json(); chat.replaceChildren(); if (!history.length) return showEmpty();
+            history.forEach(item => { addMessage(item.input, 'user', item.time); addMessage(item.response, 'assistant', item.time); });
+        }
+        document.querySelector('#composer').addEventListener('submit', async event => {
+            event.preventDefault(); const text = input.value.trim(); if (!text) return;
+            if (chat.querySelector('.empty')) chat.replaceChildren(); addMessage(text, 'user'); input.value = ''; input.style.height = 'auto'; send.disabled = true; send.textContent = 'Thinking...';
             try {
-                const response = await fetch('/api/daksh/interact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ input, type: 'text' })
-                });
-
-                const data = await response.json();
-                addMessage(data.response, 'daksh');
-                updateStats();
-            } catch (error) {
-                addMessage(`Error: ${error.message}`, 'daksh');
-            }
-        }
-
-        function addMessage(text, sender) {
-            const div = document.createElement('div');
-            div.className = `message ${sender}-message`;
-            div.textContent = sender === 'daksh' ? `DAKSH: ${text}` : `You: ${text}`;
-            chatArea.appendChild(div);
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        async function updateStats() {
-            try {
-                const response = await fetch('/api/daksh/status');
-                const data = await response.json();
-                document.getElementById('status').textContent = data.status.toUpperCase();
-                document.getElementById('interaction-count').textContent = data.interactions;
-            } catch (error) {
-                console.error('Failed to update stats:', error);
-            }
-        }
-
-        // Voice button
-        voiceBtn.addEventListener('click', async () => {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert('Voice input not supported in this browser');
-                return;
-            }
-            voiceBtn.textContent = '🎤 Listening...';
-            // Voice recording logic would go here
-            setTimeout(() => {
-                voiceBtn.textContent = '🎤 Voice';
-            }, 3000);
+                const response = await fetch('/api/daksh/interact', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({input:text,type:'text'})});
+                const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Request failed'); addMessage(data.response, 'assistant'); await updateStatus();
+            } catch (error) { addMessage(`Request failed: ${error.message}`, 'assistant'); }
+            finally { send.disabled = false; send.textContent = 'Send'; input.focus(); }
         });
-
-        // Initialize
-        updateStats();
-        setInterval(updateStats, 5000);
-        addMessage('DAKSH online. Ready to assist.', 'daksh');
+        input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight,180)}px`; });
+        input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); document.querySelector('#composer').requestSubmit(); } });
+        document.querySelector('#newChat').addEventListener('click', showEmpty);
+        Promise.all([loadHistory(), updateStatus()]).catch(error => { document.querySelector('#connection').textContent = error.message; showEmpty(); });
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('/static/service-worker.js').catch(() => {});
     </script>
 </body>
 </html>
