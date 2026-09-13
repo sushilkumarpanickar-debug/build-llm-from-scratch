@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="DAKSH, a private local AI command workspace by SNNS.">
+  <title>DAKSH · SNNS Intelligence System</title>
+  <link rel="icon" type="image/png" href="/snns_logo.png">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="scan-grid" aria-hidden="true"></div>
+  <aside>
+    <a class="brand" href="/" aria-label="DAKSH home">
+      <span class="brand-mark"><img src="/snns_logo.png" alt=""></span>
+      <span>DAKSH<small>SNNS INTELLIGENCE</small></span>
+    </a>
+    <label for="scope">ACTIVE DOMAIN</label>
+    <select id="scope"><option>Personal</option><option>CA Professional</option><option>Tiwarta CFO</option><option>SNNS Smartact</option></select>
+    <nav aria-label="Main navigation">
+      <button data-view="chat" class="active"><span>01</span> Command centre</button>
+      <button data-view="knowledge"><span>02</span> Memory vault</button>
+      <button data-view="tasks"><span>03</span> Missions &amp; agents</button>
+      <button data-view="connections"><span>04</span> Systems matrix</button>
+    </nav>
+    <div class="sidebar-bottom"><div><span class="pulse-dot"></span> LOCAL CORE ONLINE</div><small>Private runtime data stays on this Mac.</small></div>
+  </aside>
+  <main>
+    <header>
+      <div><span class="eyebrow" id="breadcrumb">PERSONAL / COMMAND CENTRE</span><h1 id="heading">Good evening. Systems are standing by.</h1></div>
+      <div class="header-status"><span class="time" id="clock">--:--:--</span><span class="badge" id="model-status">SCANNING LOCAL CORE</span></div>
+    </header>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <section id="chat" class="view">
+      <div class="cockpit">
+        <div class="core-panel">
+          <div class="core-orbit" aria-label="DAKSH system core"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="orbit orbit-three"></span><div class="core-logo"><img src="/snns_logo.png" alt="SNNS peacock logo"></div></div>
+          <span class="eyebrow core-label">DAKSH CORE / READY</span>
+          <div class="quick-metrics"><div><strong id="note-count">0</strong><span>MEMORIES</span></div><div><strong id="task-count">0</strong><span>MISSIONS</span></div><div><strong id="model-count">0</strong><span>LOCAL MODELS</span></div></div>
+        </div>
+        <div class="conversation">
+          <div id="messages" aria-live="polite"></div>
+          <form id="chat-form" class="composer"><label for="prompt">DIRECTIVE INPUT</label><textarea id="prompt" rows="3" maxlength="8000" placeholder="Ask, analyse, plan or connect an idea…" required></textarea><div class="composer-footer"><select id="model" aria-label="Local model"></select><span class="privacy-chip">PRIVATE · LOCAL</span><button class="primary" type="submit">TRANSMIT</button></div></form>
+          <small class="hint">DAKSH uses this domain’s saved memory. Review important outputs before acting.</small>
+        </div>
+        <div class="telemetry-panel"><span class="eyebrow">LIVE TELEMETRY</span><div class="telemetry"><span>INFERENCE</span><strong id="inference-state">STANDBY</strong></div><div class="telemetry"><span>MEMORY</span><strong>SQLITE</strong></div><div class="telemetry"><span>NETWORK</span><strong>LOOPBACK</strong></div><div class="signal"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><p id="local-caption">Checking Ollama…</p><button data-view="connections" class="outline">VIEW SYSTEM MATRIX</button></div>
+      </div>
+    </section>
+    <section id="knowledge" class="view" hidden>
+      <div class="section-intro"><div><span class="eyebrow">MEMORY VAULT</span><h2>Build context that survives the conversation.</h2></div><p>Every memory stays inside its active domain and keeps its source attached.</p></div>
+      <div class="split"><form id="note-form" class="panel hud-panel"><span class="corner tl"></span><span class="corner br"></span><span class="eyebrow">CAPTURE MEMORY</span><label for="note-title">Title</label><input id="note-title" maxlength="200" required placeholder="Decision, preference or reference"><label for="note-content">Content</label><textarea id="note-content" rows="9" maxlength="20000" required placeholder="What should DAKSH remember?"></textarea><label for="note-source">Source</label><input id="note-source" maxlength="500" value="My note" required><button class="primary">STORE MEMORY</button></form><div><label for="search">SEARCH DOMAIN MEMORY</label><input id="search" placeholder="Search title or content"><div id="notes" class="cards"></div></div></div>
+    </section>
+    <section id="tasks" class="view" hidden>
+      <div class="section-intro"><div><span class="eyebrow">MISSION CONTROL</span><h2>Convert intent into an inspectable plan.</h2></div><p>The system creates plans. Agent execution activates after the orchestrator and safeguards are connected.</p></div>
+      <div class="workflow"><span><b>01</b> DEFINE</span><i></i><span><b>02</b> PLAN</span><i></i><span><b>03</b> REVIEW</span><i></i><span><b>04</b> EXECUTE</span></div>
+      <form id="task-form" class="task-composer"><input id="task-prompt" maxlength="8000" required aria-label="Mission objective" placeholder="State the outcome, constraints and deadline…"><button class="primary">GENERATE PLAN</button></form><div id="task-list" class="cards mission-grid"></div>
+    </section>
+    <section id="connections" class="view" hidden>
+      <div class="systems-grid">
+        <div class="panel hud-panel"><span class="corner tl"></span><span class="corner br"></span><span class="eyebrow">RUNTIME CAPABILITIES</span><h2>Systems matrix</h2><p class="muted">Cyan means usable now. Amber means discovered or planned, not connected to the local runtime.</p><div id="capabilities"></div><button id="refresh" class="outline">RUN SYSTEM SCAN</button></div>
+        <div class="panel"><span class="eyebrow">GITHUB REPOSITORY MAP</span><h2>Available building blocks</h2><div class="repo-list"><div><strong>build-llm-from-scratch</strong><span>DAKSH core · active</span></div><div><strong>codebase-memory-mcp</strong><span>Code intelligence · evaluate</span></div><div><strong>aegis-mvp</strong><span>Governance and safety · evaluate</span></div><div><strong>snns-smartact-platform</strong><span>SNNS applications · future bridge</span></div><div><strong>compliance-platform</strong><span>Compliance workflow · future skill</span></div><div><strong>design-spark-forge-81</strong><span>Design reference · evaluate</span></div></div><p class="fine-print">These repositories are visible to the connected GitHub account. They are not automatically running inside DAKSH.</p></div>
+      </div>
+      <div class="panel settings"><h2>Privacy boundary</h2><p>Notes, conversations and mission plans are saved in a local SQLite database. Domains provide context separation inside this single-user app; they are not separate authenticated accounts. Cloud models, email, calendar, microphone and desktop control remain disconnected.</p></div>
+    </section>
+  </main>
+</body>
+</html>
