@@ -1,3 +1,10 @@
+# v0.4.0 - Native DAKSH
+
+- Added a shared SwiftUI native client for macOS and iOS.
+- Added Tailnet endpoint configuration stored locally on each device.
+- Added native conversation history, message sending, error display, and
+  new-conversation controls.
+
 # v0.3.0 - DAKSH Web App
 
 - Rebuilt the dashboard as a responsive ChatGPT-style chat application for
