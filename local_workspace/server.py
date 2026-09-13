@@ -405,9 +405,9 @@ def create_app(data_dir=None):
 
     @app.get("/{asset_name}")
     def asset(asset_name: str):
-        if asset_name not in {"app.js", "style.css", "snns_logo.png"}:
+        if asset_name not in {"app.js", "style.css", "snns_logo.png", "snns_emblem.png"}:
             raise HTTPException(404, "Not found.")
-        media = {"app.js": "text/javascript", "style.css": "text/css", "snns_logo.png": "image/png"}[asset_name]
+        media = {"app.js": "text/javascript", "style.css": "text/css", "snns_logo.png": "image/png", "snns_emblem.png": "image/png"}[asset_name]
         return FileResponse(STATIC / asset_name, media_type=media)
 
     return app

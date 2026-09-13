@@ -2,13 +2,23 @@
 from __future__ import annotations
 
 import shutil
+from pathlib import Path
+
+
+CBM_BINARY = Path("/Users/mayanagari/Documents/Codex/2026-09-07/we-x20/work/pilot/runtime/cbm/codebase-memory-mcp")
 
 
 CATALOG = (
     {"id": "daksh-finance", "name": "DAKSH Finance MCP", "decision": "built_now", "access": "read-only", "cost": "free", "description": "Allowlisted local CSV/XLSX profiling with deterministic totals.", "available": lambda: True},
+    {"id": "codebase-memory", "name": "Codebase Memory MCP", "decision": "built_now", "access": "this repository only", "cost": "free/local", "description": "Pinned v0.10.8 structural code graph with project-local cache and analysis-only tools.", "available": lambda: CBM_BINARY.is_file()},
+    {"id": "ollama", "name": "Ollama local models", "decision": "built_now", "access": "local inference", "cost": "no API tokens", "description": "Default model route for private chat, RAG, and routine reasoning on this Mac.", "available": lambda: bool(shutil.which("ollama"))},
     {"id": "gnucash", "name": "GnuCash MCP", "decision": "optional", "access": "read-only first", "cost": "free", "description": "Useful only after a SQLite-format GnuCash book is selected and backed up.", "available": lambda: bool(shutil.which("gnucash"))},
     {"id": "git", "name": "Git MCP", "decision": "optional", "access": "repository scoped", "cost": "free", "description": "Useful for repo diffs and history; DAKSH already has project Git workflows.", "available": lambda: bool(shutil.which("git"))},
-    {"id": "opencode", "name": "OpenCode", "decision": "later", "access": "repository scoped", "cost": "model dependent", "description": "Keep as a separate coding agent for approved repositories; no runtime is installed on this Mac.", "available": lambda: bool(shutil.which("opencode"))},
+    {"id": "opencode", "name": "OpenCode / Zen", "decision": "optional", "access": "repository plus selected provider", "cost": "local or changing free tiers", "description": "Use as a separate coding agent. Free hosted offers can change and are not the private default.", "available": lambda: bool(shutil.which("opencode"))},
+    {"id": "parallel-search", "name": "Parallel Search MCP", "decision": "optional", "access": "public web queries leave this Mac", "cost": "anonymous free tier", "description": "Two-tool hosted search/fetch option for public research; never send private documents or business facts.", "available": lambda: False},
+    {"id": "composio", "name": "MCP gateway", "decision": "later", "access": "third-party cloud tools", "cost": "provider dependent", "description": "A gateway may reduce loaded tool schemas, but adds an account, trust boundary, and connector permissions.", "available": lambda: False},
+    {"id": "rememble", "name": "Rememble / graph-RAG memory", "decision": "overlap", "access": "local memory", "cost": "free/local", "description": "Promising local hybrid retrieval, but duplicates DAKSH SQLite memory and document RAG; retain as a measured alternative.", "available": lambda: False},
+    {"id": "codecompress", "name": "CodeCompress", "decision": "alternative", "access": "repository scoped", "cost": "free/local", "description": "Not selected because Codebase Memory is verified here and CodeCompress requires the .NET 10 toolchain.", "available": lambda: bool(shutil.which("codecompress"))},
     {"id": "playwright", "name": "Playwright MCP", "decision": "later", "access": "isolated browser", "cost": "free", "description": "Add for supervised website testing; authenticated actions require review.", "available": lambda: bool(shutil.which("npx"))},
     {"id": "peekaboo", "name": "Peekaboo", "decision": "later", "access": "macOS UI", "cost": "free", "description": "Add only with Screen Recording and Accessibility permissions plus action approvals.", "available": lambda: bool(shutil.which("peekaboo"))},
     {"id": "filesystem", "name": "Filesystem MCP", "decision": "overlap", "access": "allowlisted", "cost": "free", "description": "DAKSH already provides scoped upload, indexing, retrieval, and deletion.", "available": lambda: False},

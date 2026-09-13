@@ -8,7 +8,7 @@ ollama pull nomic-embed-text
 .venv/bin/python -m local_workspace.server
 ```
 
-Open <http://127.0.0.1:9001>. See [local_workspace/README.md](local_workspace/README.md) for the complete Phase 1 guide and [MCP_AND_SKILLS_REVIEW.md](MCP_AND_SKILLS_REVIEW.md) for connector decisions. The repository does not require a paid AI API.
+Open <http://127.0.0.1:9001>. See [local_workspace/README.md](local_workspace/README.md) for the complete Phase 1 guide, [MCP_AND_SKILLS_REVIEW.md](MCP_AND_SKILLS_REVIEW.md) for connector decisions, and [CODEBASE_MEMORY.md](CODEBASE_MEMORY.md) for the repository-scoped structural index. The repository does not require a paid AI API.
 
 ## Legacy orchestration research
 

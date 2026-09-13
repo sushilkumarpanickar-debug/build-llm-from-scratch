@@ -44,6 +44,7 @@ class WorkspaceTest(unittest.TestCase):
         self.assertIn("FINANCE INTELLIGENCE", page.text)
         self.assertIn("MCP &amp; CONNECTOR CONTROL PLANE", page.text)
         self.assertEqual(self.client.get("/snns_logo.png").content[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual(self.client.get("/snns_emblem.png").content[:8], b"\x89PNG\r\n\x1a\n")
         self.assertTrue(self.client.get("/api/health").json()["local_only"])
         self.assertEqual(self.client.get("/api/state", headers={"Host": "evil.example"}).status_code, 403)
 
@@ -152,6 +153,10 @@ class WorkspaceTest(unittest.TestCase):
         catalog = self.client.get("/api/integrations").json()
         self.assertFalse(catalog["auto_install"])
         self.assertEqual(catalog["integrations"][0]["id"], "daksh-finance")
+        decisions = {item["id"]: item["decision"] for item in catalog["integrations"]}
+        self.assertEqual(decisions["codebase-memory"], "built_now")
+        self.assertEqual(decisions["parallel-search"], "optional")
+        self.assertEqual(decisions["rememble"], "overlap")
 
     def test_finance_xlsx_and_mcp_allowlist(self):
         workbook = Workbook()

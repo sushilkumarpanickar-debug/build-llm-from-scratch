@@ -14,5 +14,8 @@ The user authorized Phase 1 implementation and supplied the SNNS logo, JARVIS re
 | External JARVIS repositories | Source architectural and UI ideas | Reference-only. Their installers, cloud providers, broad tools, and application stacks are not adopted. |
 | External MCP servers | Add capability for named workflows | Not installed by this review. Each optional connector retains its stated scope and requirements in `MCP_AND_SKILLS_REVIEW.md`. |
 | OpenCode | Use a separate coding agent for bounded work in this repository | Project use is approved through `snns-opencode`; runtime is not installed, and future execution must use an explicit model and repository scope with reviewed diffs. |
+| Codebase Memory MCP | Use a persistent structural graph to reduce repeated code reads | Approved by the user's 13 September 2026 request for this repository only. Pinned v0.10.8, analysis tool profile, project-local ignored cache, and no automatic installer. |
+| Parallel Search MCP | Token-efficient public web search and fetch | Approved as an optional connector only. It is not enabled because queries leave the Mac; private documents and business facts must not be sent. |
+| Graph/RAG memory alternatives | Compare Rememble, mcp-knowledge-graph, knowledge-mcp, and related servers | Reviewed as alternatives, not installed; DAKSH already has scoped SQLite memory and document RAG, so a second memory authority would duplicate state. |
 
 No paid AI provider skill or hosted inference is approved for this project.

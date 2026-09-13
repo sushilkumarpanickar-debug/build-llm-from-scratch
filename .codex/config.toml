@@ -1,0 +1,4 @@
+[mcp_servers.daksh_codebase_memory]
+command = "/Users/mayanagari/Documents/Codex/2026-09-13/mak/work/build-llm-from-scratch/scripts/codebase_memory_mcp.sh"
+startup_timeout_sec = 20
+tool_timeout_sec = 60

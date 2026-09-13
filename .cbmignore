@@ -1,0 +1,10 @@
+.git/**
+.venv/**
+local_workspace/data/**
+local_workspace/models/**
+local_workspace/tmp/**
+**/.env
+**/.env.*
+**/__pycache__/**
+**/*.sqlite3
+**/*.sqlite3-*

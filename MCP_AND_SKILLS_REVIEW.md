@@ -62,3 +62,22 @@ OpenCode remains a separate coding agent rather than part of DAKSH's brain. The 
 ## 6. Validation and next gates
 
 The finance parser, allowlist enforcement, MCP initialize/list/call flow, token-protected web endpoint, connector catalog, and existing Phase 1 behavior are covered by automated tests. The next recommended pilot is GnuCash read-only if the user adopts GnuCash; otherwise keep finance analysis file-based. Browser and desktop connectors should be added only for a named workflow with an explicit folder/site/app boundary.
+
+## Token and memory efficiency review
+
+Reviewed 13 September 2026 against current primary project documentation.
+
+| Option | Decision | Reason |
+|---|---|---|
+| Ollama | Active default | Local inference avoids metered API-token charges and keeps private context on this Mac. |
+| Codebase Memory MCP v0.10.8 | Implemented | The reviewed Apple Silicon binary is pinned, repository scoped, launched without its automatic installer, limited to the analysis profile, and cached outside Git. Maintainer token-reduction benchmarks are not treated as independently verified. |
+| CodeCompress | Alternative | Its structural index overlaps Codebase Memory and requires .NET 10; running both would duplicate indexes and tool schemas. |
+| OpenCode Zen free models | Optional | Official OpenCode documentation currently lists free models, but availability can change and hosted prompts are outside the local privacy boundary. |
+| Parallel Search MCP | Optional, disabled | The official server offers anonymous search and fetch without an API key, but it is hosted and sends search queries and requested URLs to Parallel. Use only for public information after enabling it intentionally. |
+| MCP gateway such as Composio | Later | Meta-tools may reduce schema overhead, but the gateway adds another cloud account, permission layer, and vendor boundary. Adopt only for a defined group of external services. |
+| mcp-knowledge-graph | Overlap | Local graph memory is useful, but DAKSH already has explicit domain-scoped memory. A second writable memory store would create two authorities. |
+| Rememble | Alternative | Its documented SQLite, hybrid search, graph, and token-budgeted context are a good future comparison, but overlap current DAKSH memory and RAG. |
+| knowledge-mcp / LightRAG | Alternative | Supports local Ollama configuration and hybrid vector/graph retrieval, but adds entity-extraction work and a second document index. Measure retrieval quality before considering migration. |
+| rag-memory-mcp claim | Unverified | No canonical primary repository was located for the named `ttommyth` project, so it is not configured. |
+
+Primary references: [OpenCode Zen](https://opencode.ai/docs/zen/), [Parallel Search MCP](https://github.com/parallel-web/search-mcp), [Codebase Memory releases](https://github.com/DeusData/codebase-memory-mcp/releases), [CodeCompress](https://github.com/MCrank/code-compress), [mcp-knowledge-graph](https://github.com/shaneholloman/mcp-knowledge-graph), [knowledge-mcp](https://github.com/olafgeibig/knowledge-mcp), and [Rememble](https://pypi.org/project/rememble/).

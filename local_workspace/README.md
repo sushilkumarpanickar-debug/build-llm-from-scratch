@@ -34,6 +34,7 @@ Open <http://127.0.0.1:9001>. The server deliberately binds only to the loopback
 - A command-center dashboard with AI core status, live intelligence, active local agents, mission timeline, system monitor, memory insights, model status, quick commands, and a persistent voice dock.
 - Deterministic read-only finance profiling for CSV/XLSX files, plus a local stdio MCP tool constrained to an approved finance folder.
 - A connector control plane that distinguishes built-in, optional, later, overlapping, and excluded integrations without auto-installing them.
+- A repository-scoped Codebase Memory MCP connection for structural lookup with a persistent local cache.
 
 Runtime data is saved under `local_workspace/data/` and excluded from Git. The SQLite database is not encrypted; rely on macOS account and disk encryption for device-level protection. Domain separation is contextual inside a single-user application, not user authentication.
 
@@ -62,3 +63,9 @@ Copy `config/mcp.example.json` into the configuration area of an MCP-compatible 
 ## Safety boundary
 
 Document content is treated as untrusted reference data. DAKSH does not expose arbitrary shell execution or desktop automation. It refuses to persist common secret types as memory. Destructive conversation and document removal actions require an in-app confirmation and are written to the local audit log.
+
+## Token-efficient routing
+
+DAKSH uses Ollama first for private chat, RAG, and routine reasoning, so those turns have no metered API-token charge. Code questions can use the pinned Codebase Memory MCP through `.codex/config.toml`; its graph cache stays under ignored `local_workspace/data/` and the server exposes the restricted `analysis` tool profile. The wrapper refuses to run if the reviewed v0.10.8 binary is missing and supports an explicit `DAKSH_CBM_BINARY` override.
+
+OpenCode remains a separate optional coding client. Its Zen free offers can change and are hosted, so DAKSH does not silently route personal context to them. Parallel Search is listed as an optional two-tool public-web service; it is not enabled because queries and fetched URLs are sent to Parallel. DAKSH's existing SQLite memory and document RAG remain authoritative, avoiding duplicate graph/RAG memory servers and conflicting writes.
