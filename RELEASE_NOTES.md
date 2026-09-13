@@ -1,3 +1,12 @@
+# v0.14.0 - Native Workspace Navigation
+
+- Rebuilt the native DAKSH client from a single command-center screen into
+  functional Chat, Memory, Documents, Skills, and System workspaces.
+- Added selectable recent private requests, a source-traceable memory library,
+  and a device-native document picker connected to the protected import API.
+- Added an interactive local text-cleanup skill console and live service
+  telemetry across the native interface.
+
 # v0.13.0 - Native HUD and Local Document Ingestion
 
 - Completed the reactive native second-brain HUD: macOS and iPhone clients now

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 #if SWIFT_PACKAGE
 private let dakshLogoBundle = Bundle.module
@@ -11,21 +12,27 @@ struct ContentView: View {
     @StateObject private var viewModel = ChatViewModel()
     @State private var isShowingSettings = false
     @State private var isShowingMemory = false
+    @State private var section: AppSection? = .chat
 
     var body: some View {
         NavigationSplitView {
             CommandSidebar(
                 messageCount: viewModel.messages.count,
                 isSending: viewModel.isSending,
+                history: viewModel.history,
+                selection: $section,
                 showSettings: $isShowingSettings,
-                newConversation: viewModel.startNewConversation
+                newConversation: {
+                    viewModel.startNewConversation()
+                    section = .chat
+                },
+                selectHistory: {
+                    viewModel.showHistoryItem($0)
+                    section = .chat
+                }
             )
         } detail: {
-            CommandCenter(
-                viewModel: viewModel,
-                showSettings: $isShowingSettings,
-                showMemory: $isShowingMemory
-            )
+            detailView
         }
         .task {
             #if os(macOS)
@@ -53,22 +60,56 @@ struct ContentView: View {
             MemoryCaptureView(viewModel: viewModel)
         }
     }
+
+    @ViewBuilder private var detailView: some View {
+        switch section ?? .chat {
+        case .chat:
+            CommandCenter(viewModel: viewModel, showSettings: $isShowingSettings, showMemory: $isShowingMemory)
+        case .memory:
+            MemoryWorkspace(viewModel: viewModel, showMemory: $isShowingMemory)
+        case .documents:
+            DocumentsWorkspace(viewModel: viewModel)
+        case .skills:
+            SkillsWorkspace(viewModel: viewModel)
+        case .system:
+            SystemWorkspace(viewModel: viewModel, showSettings: $isShowingSettings)
+        }
+    }
+}
+
+private enum AppSection: String, CaseIterable, Hashable {
+    case chat = "Chat"
+    case memory = "Memory"
+    case documents = "Documents"
+    case skills = "Skills"
+    case system = "System"
+
+    var icon: String {
+        switch self {
+        case .chat: "bubble.left.and.bubble.right.fill"
+        case .memory: "brain.head.profile.fill"
+        case .documents: "folder.fill"
+        case .skills: "wand.and.stars"
+        case .system: "cpu.fill"
+        }
+    }
 }
 
 private struct CommandSidebar: View {
     let messageCount: Int
     let isSending: Bool
+    let history: [HistoryInteraction]
+    @Binding var selection: AppSection?
     @Binding var showSettings: Bool
     let newConversation: () -> Void
+    let selectHistory: (HistoryInteraction) -> Void
 
     var body: some View {
-        List {
+        List(selection: $selection) {
             Section {
-                Label("Command Center", systemImage: "rectangle.3.group.fill")
-                Label("AI Core", systemImage: "cpu")
-                Label("Memory", systemImage: "brain.head.profile")
-                Label("Conversations (\(messageCount))", systemImage: "bubble.left.and.bubble.right")
-                Label("Tools & Skills", systemImage: "wrench.and.screwdriver")
+                ForEach(AppSection.allCases, id: \.self) { item in
+                    Label(item.rawValue, systemImage: item.icon).tag(item)
+                }
             } header: {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("DAKSH AI").font(.title3.weight(.bold))
@@ -79,9 +120,22 @@ private struct CommandSidebar: View {
                 .padding(.vertical, 10)
             }
 
-            Section("Voice") {
-                Label("Push-to-talk enabled", systemImage: "waveform")
-                    .foregroundStyle(.cyan)
+            Section("Recent requests") {
+                if history.isEmpty {
+                    Text("Your private history will appear here.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(history.suffix(12).reversed()) { interaction in
+                        Button {
+                            selectHistory(interaction)
+                        } label: {
+                            Label(interaction.input, systemImage: "bubble.left")
+                                .lineLimit(1)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
 
             Section {
@@ -368,6 +422,280 @@ private struct ErrorBanner: View {
             Button("Dismiss", action: dismiss).font(.subheadline.weight(.semibold))
         }
         .padding(10).foregroundStyle(.red).background(.red.opacity(0.12))
+    }
+}
+
+private struct MemoryWorkspace: View {
+    @ObservedObject var viewModel: ChatViewModel
+    @Binding var showMemory: Bool
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                WorkspaceHeader(
+                    eyebrow: "PRIVATE CONTEXT",
+                    title: "Second Brain",
+                    subtitle: "Confirmed notes and imported source material stored in your private DAKSH data directory."
+                ) {
+                    Button("Save memory", systemImage: "plus.circle.fill") { showMemory = true }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.cyan)
+                }
+                MetricRow(values: [
+                    ("Documents", "\(viewModel.documents.count)", "folder.fill", .mint),
+                    ("Conversations", "\(viewModel.history.count)", "bubble.left.and.bubble.right.fill", .cyan),
+                    ("Skills", "\(viewModel.skills.count)", "wand.and.stars", .purple),
+                ])
+                if viewModel.documents.isEmpty {
+                    ContentUnavailableView(
+                        "Your second brain is empty",
+                        systemImage: "brain.head.profile",
+                        description: Text("Save a note or import a document to create a private, source-traceable memory.")
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 260)
+                } else {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("RECENT KNOWLEDGE").font(.caption.weight(.bold)).tracking(1.2).foregroundStyle(.cyan)
+                        ForEach(viewModel.documents) { document in
+                            DocumentRow(document: document)
+                        }
+                    }
+                }
+            }
+            .padding(24)
+        }
+        .background(HUDBackground())
+        .navigationTitle("Second Brain")
+    }
+}
+
+private struct DocumentsWorkspace: View {
+    @ObservedObject var viewModel: ChatViewModel
+    @State private var isImporting = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                WorkspaceHeader(
+                    eyebrow: "PRIVATE FILE VAULT",
+                    title: "Documents",
+                    subtitle: "DAKSH processes only files you explicitly choose. It never scans your device."
+                ) {
+                    Button("Import document", systemImage: "square.and.arrow.down") { isImporting = true }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.cyan)
+                }
+                Text("Supported: TXT, Markdown, CSV, JSON, DOCX, and text PDFs. Files are extracted locally and limited to 10 MB by default.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                if viewModel.documents.isEmpty {
+                    ContentUnavailableView(
+                        "No documents imported",
+                        systemImage: "doc.badge.plus",
+                        description: Text("Choose a file to make it available as cited DAKSH context.")
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 260)
+                } else {
+                    LazyVStack(spacing: 10) {
+                        ForEach(viewModel.documents) { document in
+                            DocumentRow(document: document)
+                        }
+                    }
+                }
+            }
+            .padding(24)
+        }
+        .background(HUDBackground())
+        .navigationTitle("Documents")
+        .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: [.plainText, .commaSeparatedText, .pdf, .json, .data],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(urls) = result, let url = urls.first {
+                Task { await viewModel.importDocument(url: url) }
+            } else if case let .failure(error) = result {
+                viewModel.errorMessage = error.localizedDescription
+            }
+        }
+    }
+}
+
+private struct SkillsWorkspace: View {
+    @ObservedObject var viewModel: ChatViewModel
+    @State private var input = ""
+    @State private var output: String?
+    @State private var isRunning = false
+
+    private func schema(for skill: RegisteredSkill) -> String {
+        skill.inputSchema
+            .map { "\($0.key): \($0.value)" }
+            .sorted()
+            .joined(separator: "\n")
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                WorkspaceHeader(
+                    eyebrow: "LOCAL CAPABILITIES",
+                    title: "Skills",
+                    subtitle: "Inspectable, zero-token tools. Registered skills are side-effect-free."
+                )
+                if viewModel.skills.isEmpty {
+                    ContentUnavailableView("No skills available", systemImage: "wand.and.stars")
+                        .frame(maxWidth: .infinity, minHeight: 180)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 250), spacing: 12)], spacing: 12) {
+                        ForEach(viewModel.skills) { skill in
+                            VStack(alignment: .leading, spacing: 9) {
+                                Label(skill.name, systemImage: skill.type == "analysis" ? "chart.bar.fill" : "wand.and.stars")
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                Text(skill.description).font(.subheadline).foregroundStyle(.white.opacity(0.72))
+                                Text(skill.sideEffectFree ? "READ / TRANSFORM ONLY" : "ACTION REQUIRES APPROVAL")
+                                    .font(.caption2.weight(.bold)).tracking(0.7)
+                                    .foregroundStyle(skill.sideEffectFree ? .mint : .orange)
+                                Text(schema(for: skill))
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(.white.opacity(0.55))
+                            }
+                            .padding(16)
+                            .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
+                            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 18))
+                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(.cyan.opacity(0.2)))
+                        }
+                    }
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("TRY TEXT CLEANUP").font(.caption.weight(.bold)).tracking(1.2).foregroundStyle(.cyan)
+                    TextEditor(text: $input).frame(minHeight: 100).padding(8).background(.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 12))
+                    Button(isRunning ? "Cleaning…" : "Clean text", systemImage: "wand.and.stars") {
+                        isRunning = true
+                        Task {
+                            output = await viewModel.runTextCleanup(input)
+                            isRunning = false
+                        }
+                    }
+                    .buttonStyle(.borderedProminent).tint(.cyan)
+                    .disabled(isRunning || input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    if let output {
+                        Text(output).textSelection(.enabled).padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                    }
+                }
+                .padding(18)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
+            }
+            .padding(24)
+        }
+        .foregroundStyle(.white)
+        .background(HUDBackground())
+        .navigationTitle("Skills")
+    }
+}
+
+private struct SystemWorkspace: View {
+    @ObservedObject var viewModel: ChatViewModel
+    @Binding var showSettings: Bool
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                WorkspaceHeader(
+                    eyebrow: "CONTROL PLANE",
+                    title: "System status",
+                    subtitle: "Live state from your private DAKSH service, refreshed automatically."
+                ) {
+                    Button("Connection settings", systemImage: "gearshape") { showSettings = true }
+                        .buttonStyle(.bordered)
+                }
+                MetricRow(values: [
+                    ("AI core", viewModel.isConnected ? "Ready" : "Offline", "cpu.fill", viewModel.isConnected ? .green : .orange),
+                    ("Workers", "\(viewModel.brainStatus?.commander?.workers ?? 0)", "person.3.fill", .blue),
+                    ("Memory", "\(viewModel.brainStatus?.knowledgeGraph?.totalDocuments ?? 0)", "brain.head.profile.fill", .mint),
+                    ("Skills", "\(viewModel.brainStatus?.skillRouter?.totalSkills ?? 0)", "wand.and.stars", .purple),
+                ])
+                Text("Cloud fallback: \(viewModel.systemStatus?.cloudFallbackEnabled == true ? "enabled" : "disabled")")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
+            }
+            .padding(24)
+        }
+        .background(HUDBackground())
+        .navigationTitle("System")
+    }
+}
+
+private struct WorkspaceHeader<Action: View>: View {
+    let eyebrow: String
+    let title: String
+    let subtitle: String
+    @ViewBuilder let action: () -> Action
+
+    init(eyebrow: String, title: String, subtitle: String, @ViewBuilder action: @escaping () -> Action = { EmptyView() }) {
+        self.eyebrow = eyebrow; self.title = title; self.subtitle = subtitle; self.action = action
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 18) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(eyebrow).font(.caption.weight(.bold)).tracking(1.3).foregroundStyle(.cyan)
+                Text(title).font(.system(size: 34, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                Text(subtitle).foregroundStyle(.white.opacity(0.7))
+            }
+            Spacer()
+            action()
+        }
+    }
+}
+
+private struct MetricRow: View {
+    let values: [(String, String, String, Color)]
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
+            ForEach(values, id: \.0) { title, value, icon, color in
+                StatusCard(title: title, value: value, icon: icon, color: color)
+            }
+        }
+    }
+}
+
+private struct DocumentRow: View {
+    let document: BrainDocument
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "doc.text.fill").font(.title2).foregroundStyle(.mint)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(document.title).font(.headline)
+                Text(document.source).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text("\(document.chunks) chunks · \(document.entities) entities · \(document.createdAt.formatted(date: .abbreviated, time: .shortened))")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(15)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(.mint.opacity(0.2)))
+    }
+}
+
+private struct HUDBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: [Color(red: 0.02, green: 0.06, blue: 0.12), Color(red: 0.02, green: 0.12, blue: 0.18)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
     }
 }
 

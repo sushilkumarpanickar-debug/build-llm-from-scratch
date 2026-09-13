@@ -80,6 +80,49 @@ struct APIClient: Sendable {
         )
         let _: EmptyResponse = try await perform(request)
     }
+
+    func loadDocuments() async throws -> [BrainDocument] {
+        let response: DocumentsResponse = try await perform(
+            URLRequest(url: endpoint(path: "api/brain/documents"))
+        )
+        return response.documents
+    }
+
+    func loadSkills() async throws -> [RegisteredSkill] {
+        let response: SkillsResponse = try await perform(
+            URLRequest(url: endpoint(path: "api/skills"))
+        )
+        return response.skills
+    }
+
+    func runTextCleanup(_ text: String) async throws -> String {
+        var request = URLRequest(url: endpoint(path: "api/skills"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            SkillExecutionRequest(
+                skill: "text-processing",
+                input: ["text": text, "action": "clean"]
+            )
+        )
+        let response: SkillExecutionResponse = try await perform(request)
+        return response.finalOutput.cleanedText
+    }
+
+    func importDocument(filename: String, content: Data) async throws {
+        let boundary = "DakshBoundary-\(UUID().uuidString)"
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"document\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
+        body.append(content)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        var request = URLRequest(url: endpoint(path: "api/brain/import"))
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        let _: EmptyResponse = try await perform(request)
+    }
     private func endpoint(path: String) -> URL {
         baseURL.appending(path: path)
     }
@@ -109,4 +152,20 @@ struct APIClient: Sendable {
 
 private struct ServerError: Decodable {
     let error: String
+}
+
+private struct SkillExecutionResponse: Decodable {
+    let finalOutput: CleanTextOutput
+
+    enum CodingKeys: String, CodingKey {
+        case finalOutput = "final_output"
+    }
+
+    struct CleanTextOutput: Decodable {
+        fileprivate let cleanedText: String
+
+        enum CodingKeys: String, CodingKey {
+            case cleanedText = "cleaned_text"
+        }
+    }
 }

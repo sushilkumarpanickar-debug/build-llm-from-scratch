@@ -34,7 +34,7 @@ struct InteractionHistoryResponse: Decodable, Sendable {
     let history: [HistoryInteraction]
 }
 
-struct HistoryInteraction: Decodable, Sendable {
+struct HistoryInteraction: Decodable, Identifiable, Sendable {
     let id: String
     let input: String
     let response: String
@@ -109,4 +109,49 @@ struct MemoryDocumentRequest: Encodable, Sendable {
     let title: String
     let content: String
     let source = "DAKSH native app"
+}
+
+struct DocumentsResponse: Decodable, Sendable {
+    let documents: [BrainDocument]
+}
+
+struct BrainDocument: Decodable, Identifiable, Sendable {
+    let id: String
+    let title: String
+    let source: String
+    let chunks: Int
+    let entities: Int
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, source, chunks, entities
+        case createdAt = "created_at"
+    }
+}
+
+struct SkillsResponse: Decodable, Sendable {
+    let skills: [RegisteredSkill]
+}
+
+struct RegisteredSkill: Decodable, Identifiable, Sendable {
+    let slug: String
+    let name: String
+    let description: String
+    let type: String
+    let version: String
+    let inputSchema: [String: String]
+    let sideEffectFree: Bool
+
+    var id: String { slug }
+
+    enum CodingKeys: String, CodingKey {
+        case slug, name, description, type, version
+        case inputSchema = "input_schema"
+        case sideEffectFree = "side_effect_free"
+    }
+}
+
+struct SkillExecutionRequest: Encodable, Sendable {
+    let skill: String
+    let input: [String: String]
 }

@@ -3,6 +3,9 @@ import Foundation
 @MainActor
 final class ChatViewModel: ObservableObject {
     @Published private(set) var messages: [ChatMessage] = []
+    @Published private(set) var history: [HistoryInteraction] = []
+    @Published private(set) var documents: [BrainDocument] = []
+    @Published private(set) var skills: [RegisteredSkill] = []
     @Published private(set) var isLoadingHistory = false
     @Published private(set) var isSending = false
     @Published var errorMessage: String?
@@ -37,6 +40,7 @@ final class ChatViewModel: ObservableObject {
 
         do {
             let history = try await client.loadHistory()
+            self.history = history
             messages = history.flatMap { interaction in
                 [
                     ChatMessage(
@@ -96,9 +100,49 @@ final class ChatViewModel: ObservableObject {
         do {
             systemStatus = try await client.loadStatus()
             brainStatus = try await client.loadBrainStatus()
+            documents = try await client.loadDocuments()
+            skills = try await client.loadSkills()
             isConnected = true
         } catch {
             isConnected = false
+        }
+    }
+
+    func showHistoryItem(_ interaction: HistoryInteraction) {
+        messages = [
+            ChatMessage(id: "\(interaction.id)-user", role: .user, text: interaction.input, date: interaction.time),
+            ChatMessage(id: "\(interaction.id)-assistant", role: .assistant, text: interaction.response, date: interaction.time, confidence: interaction.confidence),
+        ]
+    }
+
+    func importDocument(url: URL) async {
+        guard let client else {
+            errorMessage = APIClientError.invalidBaseURL.localizedDescription
+            return
+        }
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer {
+            if accessed { url.stopAccessingSecurityScopedResource() }
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            try await client.importDocument(filename: url.lastPathComponent, content: data)
+            await refreshStatus()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func runTextCleanup(_ text: String) async -> String? {
+        guard let client else {
+            errorMessage = APIClientError.invalidBaseURL.localizedDescription
+            return nil
+        }
+        do {
+            return try await client.runTextCleanup(text)
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
         }
     }
 
