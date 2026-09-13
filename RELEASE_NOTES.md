@@ -1,3 +1,13 @@
+# v0.13.0 - Native HUD and Local Document Ingestion
+
+- Completed the reactive native second-brain HUD: macOS and iPhone clients now
+  display live graph, skill, and worker telemetry and can save private notes.
+- Added local dashboard document import for TXT, Markdown, CSV, JSON, DOCX,
+  and text-based PDF files, with a 10 MB default limit and explicit failures
+  for unsupported or unreadable documents.
+- Added SHA-256 content deduplication and a discoverable, public skill registry
+  for DAKSH’s side-effect-free text processing, data analysis, and synthesis.
+
 # v0.12.0 - Interactive Second Brain HUD
 
 - Rebuilt the web dashboard as a responsive, live DAKSH HUD with a central core,

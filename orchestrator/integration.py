@@ -168,6 +168,13 @@ class OrchestratorSystem:
             )
         
         return result
+
+    def execute_registered_skill(self, slug: str, input_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Execute a discoverable side-effect-free skill by its public slug."""
+        skill = self.skill_router.get_skill(slug)
+        if skill is None:
+            return None
+        return self.execute_with_skills(skill.id, input_data)
     
     def add_knowledge(
         self,

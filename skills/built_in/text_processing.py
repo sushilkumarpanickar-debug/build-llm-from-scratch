@@ -19,6 +19,8 @@ class TextProcessingSkill(Skill):
             skill_type=SkillType.TRANSFORMATION,
             description="Clean, extract, and transform text data",
             version="1.0",
+            slug="text-processing",
+            input_schema={"text": "string (required)", "action": "clean | extract | tokenize"},
             routing_rules={
                 "success:true": ["Knowledge Retrieval", "Data Analysis"],
                 "success:false": [],

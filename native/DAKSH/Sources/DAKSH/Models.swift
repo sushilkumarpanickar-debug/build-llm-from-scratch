@@ -72,3 +72,41 @@ struct DashboardStatus: Decodable, Sendable {
         case interactions, status
     }
 }
+
+struct BrainStatus: Decodable, Sendable {
+    let knowledgeGraph: KnowledgeGraphStatus?
+    let skillRouter: SkillRouterStatus?
+    let commander: CommanderStatus?
+
+    enum CodingKeys: String, CodingKey {
+        case knowledgeGraph = "knowledge_graph"
+        case skillRouter = "skill_router"
+        case commander
+    }
+}
+
+struct KnowledgeGraphStatus: Decodable, Sendable {
+    let totalDocuments: Int
+
+    enum CodingKeys: String, CodingKey {
+        case totalDocuments = "total_documents"
+    }
+}
+
+struct SkillRouterStatus: Decodable, Sendable {
+    let totalSkills: Int
+
+    enum CodingKeys: String, CodingKey {
+        case totalSkills = "total_skills"
+    }
+}
+
+struct CommanderStatus: Decodable, Sendable {
+    let workers: Int
+}
+
+struct MemoryDocumentRequest: Encodable, Sendable {
+    let title: String
+    let content: String
+    let source = "DAKSH native app"
+}

@@ -58,6 +58,7 @@ class SkillRouter:
     def __init__(self):
         self.id = str(uuid.uuid4())
         self.skills: Dict[str, Skill] = {}
+        self.skills_by_slug: Dict[str, Skill] = {}
         self.skill_graph: Dict[str, List[RoutingRule]] = {}
         self.routing_paths: Dict[str, RoutingPath] = {}
         self.execution_history: List[Dict[str, Any]] = []
@@ -66,9 +67,31 @@ class SkillRouter:
     
     def register_skill(self, skill: Skill) -> None:
         """Register a skill in the router."""
+        if skill.slug in self.skills_by_slug:
+            raise ValueError(f"Duplicate skill slug: {skill.slug}")
         self.skills[skill.id] = skill
+        self.skills_by_slug[skill.slug] = skill
         self.skill_graph[skill.id] = []
         logger.info(f"Skill registered: {skill.name} (ID: {skill.id})")
+
+    def get_skill(self, slug: str) -> Optional[Skill]:
+        """Resolve only a registered, public skill slug."""
+        return self.skills_by_slug.get(slug)
+
+    def list_skills(self) -> List[Dict[str, Any]]:
+        """Expose the supported local skill registry without internal IDs."""
+        return [
+            {
+                "slug": skill.slug,
+                "name": skill.name,
+                "description": skill.description,
+                "type": skill.skill_type.value,
+                "version": skill.version,
+                "input_schema": skill.input_schema,
+                "side_effect_free": True,
+            }
+            for skill in self.skills_by_slug.values()
+        ]
     
     def register_routing_rule(self, rule: RoutingRule) -> None:
         """Register a routing rule between skills."""

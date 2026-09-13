@@ -23,6 +23,7 @@ ollama-py==0.1.0
 # Vector Database / Knowledge Base
 faiss-cpu==1.7.4
 chromadb==0.4.0
+pypdf==5.1.0
 
 # Development
 pytest==7.4.0

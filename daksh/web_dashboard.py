@@ -10,11 +10,12 @@ from daksh.interface import DAKSH, DAKSHConfig, InteractionMode
 from scripts.setup import setup_llm_providers
 from config.settings import CLOUD_FALLBACK_ENABLED, DAKSH_WEB_HOST, DAKSH_WEB_PORT
 from config.settings import (
-    DAKSH_DATA_DIR, DAKSH_OPENCODE_MAX_OUTPUT_BYTES, DAKSH_OPENCODE_TIMEOUT_SECONDS,
+    DAKSH_DATA_DIR, DAKSH_DOCUMENT_MAX_BYTES, DAKSH_OPENCODE_MAX_OUTPUT_BYTES, DAKSH_OPENCODE_TIMEOUT_SECONDS,
     DAKSH_TELEGRAM_APPROVAL_EXPIRY_SECONDS, DAKSH_TELEGRAM_REQUEST_TIMEOUT_SECONDS,
     TELEGRAM_ALLOWED_CHAT_ID, TELEGRAM_BOT_TOKEN,
 )
 from daksh.opencode_agent import OpenCodeAgent, OpenCodeError
+from daksh.document_import import DocumentImporter, DocumentImportError
 from daksh.telegram_approval import TelegramApprovalError, TelegramApprovalService
 
 
@@ -31,7 +32,8 @@ def create_daksh_dashboard(*, start_telegram_polling: bool = True) -> Flask:
     # Dashboard traffic is intended for the configured local/Tailscale listener.
     # Do not add permissive CORS headers: browsers from other origins cannot use
     # the private control surface.
-    app.config["MAX_CONTENT_LENGTH"] = 32 * 1024
+    app.config["MAX_CONTENT_LENGTH"] = DAKSH_DOCUMENT_MAX_BYTES
+    document_importer = DocumentImporter(DAKSH_DOCUMENT_MAX_BYTES)
     opencode = OpenCodeAgent(
         project_root,
         timeout_seconds=DAKSH_OPENCODE_TIMEOUT_SECONDS,
@@ -199,6 +201,24 @@ def create_daksh_dashboard(*, start_telegram_polling: bool = True) -> Flask:
         """Expose the real local graph, skill, and work metrics for the HUD."""
         return jsonify(daksh.orchestrator.get_system_status())
 
+    @app.route('/api/skills', methods=['GET', 'POST'])
+    def skills_registry():
+        """Discover and execute only registered, local side-effect-free skills."""
+        if request.method == "GET":
+            return jsonify({"skills": daksh.orchestrator.skill_router.list_skills()})
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+        slug, input_data = data.get("skill"), data.get("input")
+        if not isinstance(slug, str) or not isinstance(input_data, dict):
+            return jsonify({"error": "Skill must be a slug and input must be an object"}), 400
+        if len(slug) > 100:
+            return jsonify({"error": "Invalid skill slug"}), 400
+        result = daksh.orchestrator.execute_registered_skill(slug, input_data)
+        if result is None:
+            return jsonify({"error": "Unknown or unavailable skill"}), 404
+        return jsonify(result)
+
     @app.route('/api/brain/documents', methods=['GET', 'POST'])
     def brain_documents():
         """List metadata or add user-confirmed text to the private knowledge graph."""
@@ -235,6 +255,30 @@ def create_daksh_dashboard(*, start_telegram_polling: bool = True) -> Flask:
             return jsonify({"error": "Query must be between 1 and 10,000 characters"}), 400
         result = daksh.orchestrator.query_knowledge(query, top_k=5)
         return jsonify(result or {"error": "Knowledge graph is unavailable"}), 200 if result else 503
+
+    @app.route('/api/brain/import', methods=['POST'])
+    def import_brain_document():
+        """Import a bounded local document into the private knowledge graph."""
+        graph = daksh.orchestrator.knowledge_graph
+        if graph is None:
+            return jsonify({"error": "Knowledge graph is unavailable"}), 503
+        uploaded = request.files.get("document")
+        if uploaded is None or not uploaded.filename:
+            return jsonify({"error": "Choose a document to import"}), 400
+        try:
+            document = document_importer.import_bytes(
+                uploaded.filename, uploaded.stream.read(DAKSH_DOCUMENT_MAX_BYTES + 1)
+            )
+            stored = graph.add_document(document.title, document.content, document.source)
+        except DocumentImportError as error:
+            return jsonify({"error": str(error)}), 400
+        return jsonify({
+            "id": stored.id,
+            "title": stored.title,
+            "source": stored.source,
+            "chunks": len(stored.chunks),
+            "entities": len(stored.entities),
+        }), 201
     
     @app.route('/api/router/analyze', methods=['POST'])
     def analyze_routing():

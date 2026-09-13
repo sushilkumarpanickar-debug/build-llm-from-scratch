@@ -67,9 +67,24 @@ struct APIClient: Sendable {
         try await perform(URLRequest(url: endpoint(path: "api/daksh/status")))
     }
 
+    func loadBrainStatus() async throws -> BrainStatus {
+        try await perform(URLRequest(url: endpoint(path: "api/brain/status")))
+    }
+
+    func saveMemory(title: String, content: String) async throws {
+        var request = URLRequest(url: endpoint(path: "api/brain/documents"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            MemoryDocumentRequest(title: title, content: content)
+        )
+        let _: EmptyResponse = try await perform(request)
+    }
     private func endpoint(path: String) -> URL {
         baseURL.appending(path: path)
     }
+
+    private struct EmptyResponse: Decodable {}
 
     private func perform<Response: Decodable>(_ request: URLRequest) async throws -> Response {
         let (data, response) = try await session.data(for: request)

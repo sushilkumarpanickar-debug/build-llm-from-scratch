@@ -142,6 +142,19 @@ python -m daksh.web_dashboard
 
 Then navigate to `http://localhost:9000`
 
+### Private document ingestion
+
+Use **Save note or import document** in the dashboard’s **Private memory** panel
+to add a local TXT, Markdown, CSV, JSON, DOCX, or text-based PDF document. The
+file is processed locally and only its extracted text, source filename, and
+SHA-256 content fingerprint are stored in the private DAKSH graph under
+`DAKSH_DATA_DIR`. Identical content is deduplicated, regardless of filename.
+
+Imports are limited to 10 MB by default. Set `DAKSH_DOCUMENT_MAX_BYTES` to a
+smaller or larger positive byte limit if necessary. Password-protected,
+scanned-image, corrupt, or otherwise non-text PDFs return an explicit import
+error; OCR is not yet included.
+
 ## Private iPhone Access with iCloud Drive and Tailscale
 
 DAKSH saves conversation history to iCloud Drive by default at

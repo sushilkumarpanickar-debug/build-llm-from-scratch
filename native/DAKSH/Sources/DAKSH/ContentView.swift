@@ -10,6 +10,7 @@ struct ContentView: View {
     @AppStorage("tailnetBaseURL") private var tailnetBaseURL = ""
     @StateObject private var viewModel = ChatViewModel()
     @State private var isShowingSettings = false
+    @State private var isShowingMemory = false
 
     var body: some View {
         NavigationSplitView {
@@ -20,7 +21,11 @@ struct ContentView: View {
                 newConversation: viewModel.startNewConversation
             )
         } detail: {
-            CommandCenter(viewModel: viewModel, showSettings: $isShowingSettings)
+            CommandCenter(
+                viewModel: viewModel,
+                showSettings: $isShowingSettings,
+                showMemory: $isShowingMemory
+            )
         }
         .task {
             #if os(macOS)
@@ -43,6 +48,9 @@ struct ContentView: View {
                 baseURL: $tailnetBaseURL,
                 onSave: { viewModel.configure(baseURLString: tailnetBaseURL) }
             )
+        }
+        .sheet(isPresented: $isShowingMemory) {
+            MemoryCaptureView(viewModel: viewModel)
         }
     }
 }
@@ -92,6 +100,7 @@ private struct CommandSidebar: View {
 private struct CommandCenter: View {
     @ObservedObject var viewModel: ChatViewModel
     @Binding var showSettings: Bool
+    @Binding var showMemory: Bool
     @StateObject private var voiceInput = VoiceInputController()
     @State private var draft = ""
     @State private var showClearConfirmation = false
@@ -111,9 +120,11 @@ private struct CommandCenter: View {
                         CoreHero(isProcessing: viewModel.isSending, isConnected: viewModel.isConnected)
                         StatusGrid(
                             status: viewModel.systemStatus,
+                            brain: viewModel.brainStatus,
                             isProcessing: viewModel.isSending,
                             isConnected: viewModel.isConnected,
-                            showSettings: $showSettings
+                            showSettings: $showSettings,
+                            showMemory: $showMemory
                         )
                         ConversationPanel(
                             messages: viewModel.messages,
@@ -204,9 +215,11 @@ private struct CoreHero: View {
 
 private struct StatusGrid: View {
     let status: DashboardStatus?
+    let brain: BrainStatus?
     let isProcessing: Bool
     let isConnected: Bool
     @Binding var showSettings: Bool
+    @Binding var showMemory: Bool
 
     var body: some View {
         ViewThatFits {
@@ -218,7 +231,12 @@ private struct StatusGrid: View {
     @ViewBuilder private var cards: some View {
         StatusCard(title: "AI Core", value: isProcessing ? "Working" : (isConnected ? "Ready" : "Offline"), icon: "cpu.fill", color: .cyan)
         StatusCard(title: "Memory", value: "\(status?.contextSize ?? 0) records", icon: "brain.head.profile", color: .mint)
-        StatusCard(title: "Conversations", value: "\(status?.interactions ?? 0) total", icon: "bubble.left.and.bubble.right.fill", color: .purple)
+        Button { showMemory = true } label: {
+            StatusCard(title: "Second Brain", value: "\(brain?.knowledgeGraph?.totalDocuments ?? 0) documents", icon: "brain.head.profile", color: .mint)
+        }
+        .buttonStyle(.plain)
+        StatusCard(title: "Skills", value: "\(brain?.skillRouter?.totalSkills ?? 0) ready", icon: "wand.and.stars", color: .purple)
+        StatusCard(title: "Workers", value: "\(brain?.commander?.workers ?? 0) online", icon: "person.3.fill", color: .blue)
         Button { showSettings = true } label: {
             StatusCard(title: "Network", value: isConnected ? "Connected" : "Unavailable", icon: "lock.shield.fill", color: isConnected ? .green : .orange)
         }
@@ -375,6 +393,51 @@ private struct SettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Save") { onSave(); dismiss() } }
+            }
+        }
+    }
+}
+
+private struct MemoryCaptureView: View {
+    @ObservedObject var viewModel: ChatViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var title = ""
+    @State private var content = ""
+    @State private var isSaving = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Private second brain") {
+                    TextField("Title", text: $title)
+                    TextEditor(text: $content)
+                        .frame(minHeight: 160)
+                    Text("Saved only to the DAKSH private data store and used as a cited context source when relevant.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Save memory")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        isSaving = true
+                        Task {
+                            if await viewModel.saveMemory(title: title, content: content) {
+                                dismiss()
+                            }
+                            isSaving = false
+                        }
+                    }
+                    .disabled(
+                        isSaving
+                            || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            || content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
+                }
             }
         }
     }

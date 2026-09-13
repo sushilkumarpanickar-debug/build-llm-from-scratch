@@ -8,6 +8,7 @@ final class ChatViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var hasLoadedHistory = false
     @Published private(set) var systemStatus: DashboardStatus?
+    @Published private(set) var brainStatus: BrainStatus?
     @Published private(set) var isConnected = false
 
     private var client: APIClient?
@@ -94,9 +95,25 @@ final class ChatViewModel: ObservableObject {
         }
         do {
             systemStatus = try await client.loadStatus()
+            brainStatus = try await client.loadBrainStatus()
             isConnected = true
         } catch {
             isConnected = false
+        }
+    }
+
+    func saveMemory(title: String, content: String) async -> Bool {
+        guard let client else {
+            errorMessage = APIClientError.invalidBaseURL.localizedDescription
+            return false
+        }
+        do {
+            try await client.saveMemory(title: title, content: content)
+            await refreshStatus()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
         }
     }
 

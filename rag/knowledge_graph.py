@@ -6,6 +6,7 @@ Your second brain for persistent knowledge management
 import uuid
 import json
 import os
+import hashlib
 from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -84,10 +85,17 @@ class KnowledgeGraph:
         Automatically chunks and indexes content.
         """
         
+        content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        for existing in self.documents.values():
+            if existing.metadata.get("content_sha256") == content_hash:
+                logger.info(f"Skipped duplicate document: {title}")
+                return existing
+
         doc = Document(
             title=title,
             content=content,
             source=source,
+            metadata={"content_sha256": content_hash},
         )
         
         # Chunk document
@@ -188,6 +196,9 @@ class KnowledgeGraph:
                 ):
                     raise RuntimeError("The DAKSH knowledge store is invalid.")
                 document = self.add_document(record["title"], record["content"], record["source"])
+                metadata = record.get("metadata")
+                if isinstance(metadata, dict):
+                    document.metadata.update(metadata)
                 saved_id = record.get("id")
                 if isinstance(saved_id, str) and saved_id and saved_id != document.id:
                     generated_id = document.id
@@ -204,7 +215,13 @@ class KnowledgeGraph:
         if self.storage_path is None or self._loading:
             return
         records = [
-            {"id": document.id, "title": document.title, "content": document.content, "source": document.source}
+            {
+                "id": document.id,
+                "title": document.title,
+                "content": document.content,
+                "source": document.source,
+                "metadata": document.metadata,
+            }
             for document in self.documents.values()
         ]
         self.storage_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

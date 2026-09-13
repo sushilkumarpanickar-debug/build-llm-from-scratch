@@ -5,6 +5,7 @@ Mimics OmniRoute's intelligent routing and execution model
 
 import uuid
 import time
+import re
 from typing import Any, Dict, List, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -105,6 +106,8 @@ class Skill(ABC):
         version: str = "1.0",
         dependencies: Optional[List[str]] = None,
         routing_rules: Optional[Dict[str, Any]] = None,
+        slug: Optional[str] = None,
+        input_schema: Optional[Dict[str, str]] = None,
     ):
         self.id = str(uuid.uuid4())
         self.name = name
@@ -113,6 +116,8 @@ class Skill(ABC):
         self.version = version
         self.dependencies = dependencies or []
         self.routing_rules = routing_rules or {}
+        self.slug = slug or re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        self.input_schema = input_schema or {}
         
         # Execution tracking
         self.execution_count = 0
@@ -254,9 +259,13 @@ class Skill(ABC):
         )
         
         return {
+            "slug": self.slug,
             "name": self.name,
             "type": self.skill_type.value,
+            "description": self.description,
             "version": self.version,
+            "input_schema": self.input_schema,
+            "side_effect_free": True,
             "execution_count": self.execution_count,
             "success_count": self.success_count,
             "success_rate": success_rate,

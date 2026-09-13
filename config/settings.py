@@ -75,6 +75,7 @@ DAKSH_DATA_DIR = Path(
         "~/Library/Mobile Documents/com~apple~CloudDocs/DAKSH",
     )
 ).expanduser()
+DAKSH_DOCUMENT_MAX_BYTES = int(os.getenv("DAKSH_DOCUMENT_MAX_BYTES", str(10 * 1024 * 1024)))
 
 # OpenCode coding agent: local Ollama only, restricted to this repository.
 DAKSH_OPENCODE_TIMEOUT_SECONDS = int(os.getenv("DAKSH_OPENCODE_TIMEOUT_SECONDS", "300"))

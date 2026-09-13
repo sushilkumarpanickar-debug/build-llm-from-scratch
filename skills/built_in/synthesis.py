@@ -18,6 +18,8 @@ class SynthesisSkill(Skill):
             skill_type=SkillType.SYNTHESIS,
             description="Combine and synthesize results from multiple sources",
             version="1.0",
+            slug="synthesis",
+            input_schema={"sources": "list (required)", "synthesis_type": "combine | format | summarize"},
             routing_rules={}
         )
     

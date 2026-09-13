@@ -20,6 +20,8 @@ class DataAnalysisSkill(Skill):
             skill_type=SkillType.ANALYSIS,
             description="Analyze data and extract statistical insights",
             version="1.0",
+            slug="data-analysis",
+            input_schema={"data": "object, string, or list (required)", "analysis_type": "general | statistical | pattern | distribution"},
             routing_rules={
                 "success:true": ["Synthesis"],
                 "success:false": [],
