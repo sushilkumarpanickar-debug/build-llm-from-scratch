@@ -13,6 +13,7 @@ from llm_providers.provider_base import (
     LLMProvider, LLMConfig, LLMRequest, LLMResponse,
     LLMBase, OpenAILLM, AnthropicLLM, PerplexityLLM, LocalLLM
 )
+from config.settings import CLOUD_FALLBACK_ENABLED
 
 
 @dataclass
@@ -102,6 +103,11 @@ class LLMRouter:
             request.task_type, 
             list(self.providers.keys())
         )
+        if not CLOUD_FALLBACK_ENABLED:
+            suitable_providers = [
+                provider for provider in suitable_providers
+                if provider == LLMProvider.LOCAL
+            ]
         
         if not suitable_providers or not any(p in self.providers and self.providers[p].config.enabled for p in suitable_providers):
             decision.use_llm = False
@@ -126,7 +132,7 @@ class LLMRouter:
         
         decision.use_llm = True
         decision.provider = best_provider
-        decision.confidence = score / 100.0  # Convert to 0-1
+        decision.confidence = min(score / 100.0, 1.0)
         decision.reason = f"Selected {best_provider.value} (score: {score:.1f}/100)"
         
         # Set fallback providers (other ranked providers)
@@ -334,14 +340,14 @@ class LLMRouter:
         """
         
         return {
-            "reasoning": [LLMProvider.ANTHROPIC, LLMProvider.OPENAI, LLMProvider.LOCAL],
-            "coding": [LLMProvider.OPENAI, LLMProvider.ANTHROPIC, LLMProvider.LOCAL],
-            "analysis": [LLMProvider.ANTHROPIC, LLMProvider.OPENAI, LLMProvider.LOCAL],
-            "summary": [LLMProvider.OPENAI, LLMProvider.ANTHROPIC],
-            "creative": [LLMProvider.ANTHROPIC, LLMProvider.OPENAI],
-            "web_search": [LLMProvider.PERPLEXITY],
-            "general": [LLMProvider.OPENAI, LLMProvider.ANTHROPIC, LLMProvider.PERPLEXITY],
-            "planning": [LLMProvider.ANTHROPIC, LLMProvider.OPENAI],
+            "reasoning": [LLMProvider.LOCAL, LLMProvider.ANTHROPIC, LLMProvider.OPENAI],
+            "coding": [LLMProvider.LOCAL, LLMProvider.OPENAI, LLMProvider.ANTHROPIC],
+            "analysis": [LLMProvider.LOCAL, LLMProvider.ANTHROPIC, LLMProvider.OPENAI],
+            "summary": [LLMProvider.LOCAL, LLMProvider.OPENAI, LLMProvider.ANTHROPIC],
+            "creative": [LLMProvider.LOCAL, LLMProvider.ANTHROPIC, LLMProvider.OPENAI],
+            "web_search": [LLMProvider.LOCAL, LLMProvider.PERPLEXITY],
+            "general": [LLMProvider.LOCAL, LLMProvider.OPENAI, LLMProvider.ANTHROPIC],
+            "planning": [LLMProvider.LOCAL, LLMProvider.ANTHROPIC, LLMProvider.OPENAI],
         }
     
     def get_stats(self) -> Dict[str, Any]:

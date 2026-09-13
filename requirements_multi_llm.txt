@@ -16,7 +16,6 @@ pyaudio==0.2.13
 
 # Web Dashboard
 Flask==3.0.0
-Flask-CORS==4.0.0
 
 # Local LLM Support
 ollama-py==0.1.0

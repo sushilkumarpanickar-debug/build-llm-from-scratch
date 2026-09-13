@@ -2,13 +2,13 @@
 DAKSH Web Dashboard - J.A.R.V.I.S-Style Web Interface
 """
 
-from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
+from flask import Flask, jsonify, render_template, request
 import json
 from datetime import datetime
 
 from daksh.interface import DAKSH, DAKSHConfig, InteractionMode
-from llm_providers.router import LLMRouter
+from scripts.setup import setup_llm_providers
+from config.settings import DAKSH_WEB_HOST, DAKSH_WEB_PORT
 
 
 def create_daksh_dashboard() -> Flask:
@@ -16,7 +16,6 @@ def create_daksh_dashboard() -> Flask:
     Create Flask app for DAKSH web dashboard.
     """
     app = Flask(__name__)
-    CORS(app)
     
     # Initialize DAKSH
     daksh_config = DAKSHConfig(
@@ -26,7 +25,8 @@ def create_daksh_dashboard() -> Flask:
         personality="professional"
     )
     daksh = DAKSH(daksh_config)
-    llm_router = LLMRouter()
+    llm_router = setup_llm_providers()
+    daksh.llm_router = llm_router
     
     # Dashboard routes
     @app.route('/')
@@ -140,4 +140,4 @@ def create_daksh_dashboard() -> Flask:
 
 if __name__ == "__main__":
     app = create_daksh_dashboard()
-    app.run(host="localhost", port=9000, debug=False)
+    app.run(host=DAKSH_WEB_HOST, port=DAKSH_WEB_PORT, debug=False)

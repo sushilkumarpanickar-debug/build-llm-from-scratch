@@ -96,7 +96,7 @@ class Worker:
             "total_tasks": len(tasks),
             "successful_tasks": len(results),
             "failed_tasks": len(errors),
-            "total_skills_executed": self.total_skills_executed,
+            "total_skills_executed": len(results),
             "execution_time": execution_time,
             "tokens_used": 0,  # Zero-token mode
             "errors": errors,
@@ -138,8 +138,6 @@ class Worker:
         skill_exec.status = "completed"
         skill_exec.execution_time_seconds = time.time() - start_time
         skill_exec.tokens_used = 0  # Zero-token mode
-        
-        self.active_skills[skill_exec.id] = skill_exec
         
         return skill_exec
     

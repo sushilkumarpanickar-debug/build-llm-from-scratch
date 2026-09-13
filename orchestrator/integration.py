@@ -5,7 +5,7 @@ Orchestrator + Skills + RAG + MCP + Work Tracking
 
 import uuid
 from typing import Any, Dict, List, Optional
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from loguru import logger
 
@@ -94,7 +94,7 @@ class OrchestratorSystem:
         
         # Step 2: Execute through Commander
         merged_context = {**(context or {}), **rag_context}
-        execution_result = self.commander.execute(objective, merged_context)
+        execution_result = asdict(self.commander.execute(objective, merged_context))
         
         # Step 3: Track work
         if self.config.enable_work_tracking:

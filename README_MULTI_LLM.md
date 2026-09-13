@@ -142,6 +142,51 @@ python -m daksh.web_dashboard
 
 Then navigate to `http://localhost:9000`
 
+## Private iPhone Access with iCloud Drive and Tailscale
+
+DAKSH saves conversation history to iCloud Drive by default at
+`~/Library/Mobile Documents/com~apple~CloudDocs/DAKSH/interaction_history.json`.
+This keeps the history available on Apple devices signed into the same iCloud
+account. Do not place `.env` in iCloud Drive: API keys must remain only on the
+laptop running DAKSH.
+
+Run the dashboard only on the loopback interface:
+
+```bash
+DAKSH_WEB_HOST=127.0.0.1 python -m daksh.web_dashboard
+```
+
+Then, after installing and signing in to Tailscale on the laptop and iPhone,
+publish that local service to the private tailnet:
+
+```bash
+tailscale serve --https=443 http://127.0.0.1:9000
+```
+
+Open the HTTPS URL shown by `tailscale serve status` on the iPhone while signed
+in to the same Tailscale tailnet. Tailscale authentication protects the
+dashboard without exposing it to the public Internet.
+
+## Local-First Release
+
+This release targets an Apple Silicon Mac with 8 GB unified memory using
+Ollama's `qwen2.5:3b` model. Install Ollama on macOS, start the Ollama app,
+then download the model once:
+
+```bash
+ollama pull qwen2.5:3b
+```
+
+DAKSH routes every model task to Ollama first. `CLOUD_FALLBACK_ENABLED=false`
+is the default and guarantees that OpenAI, Anthropic, and Perplexity API keys
+are never used. To evaluate cloud fallbacks temporarily, set it to `true`;
+set it back to `false` and remove cloud API keys for the final local-only
+configuration.
+
+Install and sign in to Tailscale on both devices before using the private
+iPhone-access instructions above. The laptop must remain powered on, connected
+to the Internet, and running both Ollama and DAKSH.
+
 ### 3. Programmatic Usage
 
 ```python

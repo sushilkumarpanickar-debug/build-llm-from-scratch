@@ -8,7 +8,8 @@ from daksh.interface import DAKSH, DAKSHConfig
 from config.settings import (
     OPENAI_API_KEY, ANTHROPIC_API_KEY, PERPLEXITY_API_KEY,
     LOCAL_LLM_BASE_URL, LOCAL_LLM_MODEL,
-    DAKSH_VOICE_ENABLED, DAKSH_PERSONALITY, DAKSH_VOICE_PROFILE
+    DAKSH_VOICE_ENABLED, DAKSH_PERSONALITY, DAKSH_VOICE_PROFILE,
+    CLOUD_FALLBACK_ENABLED,
 )
 from loguru import logger
 
@@ -20,8 +21,19 @@ def setup_llm_providers() -> LLMRouter:
     """
     router = LLMRouter()
     
-    # Register OpenAI (ChatGPT)
-    if OPENAI_API_KEY:
+    # Register the local model first so it is the default for every task.
+    local_config = LLMConfig(
+        provider=LLMProvider.LOCAL,
+        model=LOCAL_LLM_MODEL,
+        api_base=LOCAL_LLM_BASE_URL,
+        enabled=True,
+        priority=10,
+    )
+    router.register_provider(local_config)
+    logger.info(f"Local-first routing enabled ({LOCAL_LLM_MODEL})")
+
+    # Cloud providers are opt-in transition fallbacks, never implicit usage.
+    if CLOUD_FALLBACK_ENABLED and OPENAI_API_KEY:
         openai_config = LLMConfig(
             provider=LLMProvider.OPENAI,
             model="gpt-4",
@@ -35,7 +47,7 @@ def setup_llm_providers() -> LLMRouter:
         logger.info("✓ OpenAI (GPT-4) registered")
     
     # Register Anthropic (Claude)
-    if ANTHROPIC_API_KEY:
+    if CLOUD_FALLBACK_ENABLED and ANTHROPIC_API_KEY:
         anthropic_config = LLMConfig(
             provider=LLMProvider.ANTHROPIC,
             model="claude-opus-4",
@@ -49,7 +61,7 @@ def setup_llm_providers() -> LLMRouter:
         logger.info("✓ Anthropic (Claude) registered")
     
     # Register Perplexity
-    if PERPLEXITY_API_KEY:
+    if CLOUD_FALLBACK_ENABLED and PERPLEXITY_API_KEY:
         perplexity_config = LLMConfig(
             provider=LLMProvider.PERPLEXITY,
             model="pplx-7b-online",
@@ -62,22 +74,8 @@ def setup_llm_providers() -> LLMRouter:
         router.register_provider(perplexity_config)
         logger.info("✓ Perplexity AI registered")
     
-    # Register Local LLM (Ollama)
-    local_config = LLMConfig(
-        provider=LLMProvider.LOCAL,
-        model=LOCAL_LLM_MODEL,
-        api_base=LOCAL_LLM_BASE_URL,
-        enabled=True,
-        priority=1,  # Lower priority (slower)
-    )
-    router.register_provider(local_config)
-    logger.info(f"✓ Local LLM ({LOCAL_LLM_MODEL}) registered")
-    
-    if not OPENAI_API_KEY and not ANTHROPIC_API_KEY and not PERPLEXITY_API_KEY:
-        logger.warning(
-            "⚠ No cloud LLM API keys configured. Only local LLM will be used. "
-            "Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or PERPLEXITY_API_KEY in .env"
-        )
+    if not CLOUD_FALLBACK_ENABLED:
+        logger.info("Cloud fallback disabled; no API provider will be called.")
     
     return router
 
@@ -96,8 +94,6 @@ def setup_daksh(llm_router: LLMRouter) -> DAKSH:
     )
     
     daksh = DAKSH(daksh_config)
-    
-    # Attach LLM router
     daksh.llm_router = llm_router
     
     logger.info(f"✓ DAKSH initialized with {daksh_config.personality} personality")

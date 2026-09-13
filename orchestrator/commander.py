@@ -73,6 +73,11 @@ class Commander:
         num_managers: int = NUM_MANAGERS,
         workers_per_manager: int = WORKERS_PER_MANAGER,
     ):
+        if num_managers < 1:
+            raise ValueError("num_managers must be at least 1")
+        if workers_per_manager < 1:
+            raise ValueError("workers_per_manager must be at least 1")
+
         self.id = str(uuid.uuid4())
         self.name = name
         self.num_managers = num_managers

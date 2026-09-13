@@ -13,12 +13,15 @@ Features:
 import uuid
 import threading
 import time
+from pathlib import Path
 from typing import Any, Dict, Optional, Callable, List
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from loguru import logger
 
+from config.settings import DAKSH_DATA_DIR
+from daksh.cloud_storage import InteractionHistoryStore
 from orchestrator.integration import OrchestratorSystem
 from llm_providers.router import LLMRouter, LLMRequest
 
@@ -53,6 +56,7 @@ class DAKSHConfig:
     context_memory: int = 10      # Remember last N interactions
     auto_execute: bool = False    # Auto-execute recognized commands
     personality: str = "professional"  # professional, friendly, casual
+    data_directory: Optional[str] = None
 
 
 @dataclass
@@ -91,7 +95,9 @@ class DAKSH:
         self.llm_router = LLMRouter()
         
         self.status = DAKSHStatus.IDLE
-        self.interaction_history: List[DAKSHInteraction] = []
+        data_directory = Path(self.config.data_directory) if self.config.data_directory else DAKSH_DATA_DIR
+        self.history_store = InteractionHistoryStore(data_directory)
+        self.interaction_history = self._load_interaction_history()
         self.context_memory: Dict[str, Any] = {}
         self.current_interaction: Optional[DAKSHInteraction] = None
         
@@ -262,10 +268,64 @@ class DAKSH:
             interaction.completed_at = datetime.now()
             
             self.interaction_history.append(interaction)
+            self._save_interaction_history()
             self.current_interaction = interaction
             self._update_context(interaction)
         
         return interaction
+
+    def _load_interaction_history(self) -> List[DAKSHInteraction]:
+        interactions = []
+        for record in self.history_store.load():
+            try:
+                interactions.append(
+                    DAKSHInteraction(
+                        id=record["id"],
+                        mode=InteractionMode(record["mode"]),
+                        user_input=record["user_input"],
+                        user_input_type=record["user_input_type"],
+                        system_response=record["system_response"],
+                        response_type=record["response_type"],
+                        status=DAKSHStatus(record["status"]),
+                        execution_time_ms=record["execution_time_ms"],
+                        confidence=record["confidence"],
+                        metadata=record["metadata"],
+                        created_at=datetime.fromisoformat(record["created_at"]),
+                        completed_at=(
+                            datetime.fromisoformat(record["completed_at"])
+                            if record["completed_at"]
+                            else None
+                        ),
+                    )
+                )
+            except (KeyError, TypeError, ValueError) as error:
+                logger.error(f"Skipping invalid DAKSH interaction history record: {error}")
+        return interactions
+
+    def _save_interaction_history(self) -> None:
+        self.history_store.save(
+            [
+                {
+                    "id": interaction.id,
+                    "mode": interaction.mode.value,
+                    "user_input": interaction.user_input,
+                    "user_input_type": interaction.user_input_type,
+                    "system_response": interaction.system_response,
+                    "response_type": interaction.response_type,
+                    "status": interaction.status.value,
+                    "execution_time_ms": interaction.execution_time_ms,
+                    "confidence": interaction.confidence,
+                    "metadata": interaction.metadata,
+                    "created_at": interaction.created_at.isoformat(),
+                    "completed_at": (
+                        interaction.completed_at.isoformat()
+                        if interaction.completed_at
+                        else None
+                    ),
+                }
+                for interaction in self.interaction_history
+            ]
+        )
     
     def _parse_input(self, user_input: str) -> tuple[str, Dict[str, Any]]:
         """
