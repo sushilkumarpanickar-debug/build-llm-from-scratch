@@ -1,3 +1,10 @@
+# v0.7.0 - Installable Native Apps
+
+- Added source-controlled Xcode targets for native iOS and macOS DAKSH AI apps.
+- Added signing-ready bundle identifiers, shared Xcode schemes, required voice
+  permissions, and macOS sandbox entitlements.
+- Added verified instructions for device signing and deployment with Xcode.
+
 # v0.6.0 - DAKSH AI Command Center
 
 - Redesigned the web dashboard and native client as responsive DAKSH AI command

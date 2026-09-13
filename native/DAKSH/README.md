@@ -2,25 +2,37 @@
 
 This is a single SwiftUI source tree for **iOS 17+** and **macOS 14+**. It connects only to a DAKSH web dashboard over a configurable HTTPS Tailnet URL; it contains no cloud-provider API keys or provider configuration.
 
-## Run in Xcode
+## Build and deploy in Xcode
 
-1. Open `native/DAKSH/Package.swift` in Xcode 15 or newer, then select the **DAKSH** executable scheme.
-2. Select either a macOS destination or an iOS simulator/device and run.
-3. Open **Endpoint Settings** (gear button) and enter the dashboard origin, for example `https://daksh.your-tailnet.ts.net`. The value is persisted locally using `@AppStorage`.
+1. Open `native/DAKSH/DAKSH.xcodeproj` in Xcode 15 or newer.
+2. Choose either the **DAKSH iOS** or **DAKSH macOS** scheme and select a
+   simulator, connected device, or local Mac destination.
+3. To deploy to hardware, connect and unlock the iPhone/iPad (tap **Trust**
+   when prompted) or connect the Mac, then select that device from Xcode's
+   run destination menu.
+4. In the target's **Signing & Capabilities** tab, select your paid Apple
+   Developer Team. Xcode creates the necessary provisioning profile. The
+   checked-in project intentionally has no development team selected.
+5. Press Run. On a first device launch, approve the microphone and speech
+   recognition prompts. Open **Endpoint Settings** (gear button) and enter the
+   dashboard origin, for example `https://daksh.your-tailnet.ts.net`. The value
+   is persisted locally using `@AppStorage`.
+
+The apps use distinct bundle identifiers:
+
+- iOS: `com.dakshai.client.ios`
+- macOS: `com.dakshai.client.macos`
+
+Both targets compile the shared files in `Sources/DAKSH`, support iOS 17+ and
+macOS 14+, and include the required microphone and speech-recognition privacy
+descriptions. The macOS target is sandboxed with microphone and outbound
+network access enabled.
 
 ## Voice input
 
 The microphone button uses Apple Speech Recognition and the device microphone
-for push-to-talk transcription. Before running on a physical iPhone or Mac,
-add these privacy usage descriptions to the app target's `Info.plist` in
-Xcode:
-
-```xml
-<key>NSMicrophoneUsageDescription</key>
-<string>DAKSH uses the microphone for push-to-talk requests.</string>
-<key>NSSpeechRecognitionUsageDescription</key>
-<string>DAKSH transcribes push-to-talk requests on your device.</string>
-```
+for push-to-talk transcription. Both app targets already declare the necessary
+privacy usage descriptions in `Configuration/`.
 
 Tap the microphone button to begin speaking and tap it again to stop. The
 recognized text appears in the composer; review it and press Send to submit it
@@ -35,12 +47,15 @@ The client uses these existing server routes:
 
 ## Command-line validation
 
-On macOS with Swift tools installed:
+The Swift Package remains available for its tests. On macOS with Xcode:
 
 ```sh
 cd native/DAKSH
 swift test
-swift run DAKSH
+xcodebuild -project DAKSH.xcodeproj -scheme "DAKSH macOS" \
+  -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project DAKSH.xcodeproj -scheme "DAKSH iOS" \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
-An Xcode project is deliberately not checked in: Swift Package Manager is directly Xcode-openable and avoids generated project metadata while retaining a shared universal codebase.
+Use the Xcode project—not `Package.swift`—to build installable applications.
