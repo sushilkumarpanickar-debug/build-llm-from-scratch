@@ -163,9 +163,18 @@ private struct CommandCenter: View {
     @StateObject private var voiceInput = VoiceInputController()
     @State private var draft = ""
     @State private var showClearConfirmation = false
+    @State private var isShowingVoiceConsole = false
+
+    private func submit(_ command: String) {
+        let input = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !input.isEmpty, !viewModel.isSending else { return }
+        draft = ""
+        Task { await viewModel.send(input) }
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
             if let error = viewModel.errorMessage {
                 ErrorBanner(message: error) { viewModel.errorMessage = nil }
             }
@@ -173,49 +182,48 @@ private struct CommandCenter: View {
                 ErrorBanner(message: error) { voiceInput.errorMessage = nil }
             }
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: 20) {
-                        CoreHero(
-                            isProcessing: viewModel.isSending,
-                            isConnected: viewModel.isConnected,
-                            messageCount: viewModel.messages.count
-                        )
-                        StatusGrid(
-                            status: viewModel.systemStatus,
-                            brain: viewModel.brainStatus,
-                            isProcessing: viewModel.isSending,
-                            isConnected: viewModel.isConnected,
-                            showSettings: $showSettings,
-                            showMemory: $showMemory
-                        )
-                        ConversationPanel(
-                            messages: viewModel.messages,
-                            isLoading: viewModel.isLoadingHistory,
-                            isSending: viewModel.isSending
-                        )
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            CoreHero(
+                                isProcessing: viewModel.isSending,
+                                isConnected: viewModel.isConnected,
+                                messageCount: viewModel.messages.count
+                            )
+                            if geometry.size.width >= 920 {
+                                HStack(alignment: .top, spacing: 16) {
+                                    cockpitMain(proxy: proxy)
+                                    ActivityRail(
+                                        messages: viewModel.messages,
+                                        status: viewModel.systemStatus,
+                                        brain: viewModel.brainStatus,
+                                        isConnected: viewModel.isConnected
+                                    )
+                                    .frame(width: 260)
+                                }
+                            } else {
+                                cockpitMain(proxy: proxy)
+                                ActivityRail(
+                                    messages: viewModel.messages,
+                                    status: viewModel.systemStatus,
+                                    brain: viewModel.brainStatus,
+                                    isConnected: viewModel.isConnected
+                                )
+                            }
+                        }
+                        .padding(16)
                     }
-                    .padding()
+                    .onChange(of: viewModel.messages.count) {
+                        guard let last = viewModel.messages.last else { return }
+                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    }
                 }
-                .onChange(of: viewModel.messages.count) {
-                    guard let last = viewModel.messages.last else { return }
-                    withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                CommandComposer(draft: $draft, isSending: viewModel.isSending, voiceInput: voiceInput) {
+                    submit(draft)
                 }
             }
-
-            CommandComposer(draft: $draft, isSending: viewModel.isSending, voiceInput: voiceInput) {
-                let message = draft
-                draft = ""
-                Task { await viewModel.send(message) }
-            }
+            .background(HUDBackground())
         }
-        .background(
-            LinearGradient(
-                colors: [Color(red: 0.02, green: 0.06, blue: 0.12), Color(red: 0.02, green: 0.12, blue: 0.18)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
         .navigationTitle("DAKSH AI")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -239,6 +247,42 @@ private struct CommandCenter: View {
         } message: {
             Text("This clears the current app view. Server history remains private in iCloud Drive.")
         }
+        .sheet(isPresented: $isShowingVoiceConsole) {
+            VoiceConsole(
+            voiceInput: voiceInput,
+            isSending: viewModel.isSending,
+            dismiss: { isShowingVoiceConsole = false },
+            send: { submit(voiceInput.transcript) }
+            )
+            #if os(macOS)
+            .frame(minWidth: 760, minHeight: 620)
+            #endif
+        }
+    }
+
+    @ViewBuilder private func cockpitMain(proxy: ScrollViewProxy) -> some View {
+        VStack(spacing: 16) {
+            QuickCommandDeck(
+            isSending: viewModel.isSending,
+            openMemory: { showMemory = true },
+            openVoice: { isShowingVoiceConsole = true },
+            send: submit
+            )
+            StatusGrid(
+            status: viewModel.systemStatus,
+            brain: viewModel.brainStatus,
+            isProcessing: viewModel.isSending,
+            isConnected: viewModel.isConnected,
+            showSettings: $showSettings,
+            showMemory: $showMemory
+            )
+            ConversationPanel(
+            messages: viewModel.messages,
+            isLoading: viewModel.isLoadingHistory,
+            isSending: viewModel.isSending
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -297,7 +341,7 @@ private struct StatusGrid: View {
 
     @ViewBuilder private var cards: some View {
         StatusCard(title: "AI Core", value: isProcessing ? "Working" : (isConnected ? "Ready" : "Offline"), icon: "cpu.fill", color: .cyan)
-        StatusCard(title: "Memory", value: "\(status?.contextSize ?? 0) records", icon: "brain.head.profile", color: .mint)
+        StatusCard(title: "Memory", value: "\(brain?.knowledgeGraph?.totalDocuments ?? status?.contextSize ?? 0) records", icon: "brain.head.profile", color: .mint)
         Button { showMemory = true } label: {
             StatusCard(title: "Second Brain", value: "\(brain?.knowledgeGraph?.totalDocuments ?? 0) documents", icon: "brain.head.profile", color: .mint)
         }
@@ -308,6 +352,113 @@ private struct StatusGrid: View {
             StatusCard(title: "Network", value: isConnected ? "Connected" : "Unavailable", icon: "lock.shield.fill", color: isConnected ? .green : .orange)
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct QuickCommandDeck: View {
+    let isSending: Bool
+    let openMemory: () -> Void
+    let openVoice: () -> Void
+    let send: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("COMMAND DECK", systemImage: "bolt.horizontal.circle.fill")
+                    .font(.caption.weight(.bold)).tracking(1.1).foregroundStyle(.cyan)
+                Spacer()
+                Text("LOCAL + PRIVATE").font(.caption2.weight(.bold)).foregroundStyle(.mint)
+            }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 10)], spacing: 10) {
+                DeckButton(title: "System report", icon: "gauge.with.dots.needle.67percent", color: .cyan) {
+                    send("Give me a concise status report of DAKSH and my private second brain.")
+                }
+                DeckButton(title: "Search memory", icon: "magnifyingglass.circle.fill", color: .mint) {
+                    send("What do you know from my private DAKSH memory?")
+                }
+                DeckButton(title: "Plan a task", icon: "checklist.checked", color: .purple) {
+                    send("Help me create a clear plan for my next task.")
+                }
+                DeckButton(title: "Save memory", icon: "plus.circle.fill", color: .orange, action: openMemory)
+                DeckButton(title: "Voice console", icon: "waveform.circle.fill", color: .pink, action: openVoice)
+            }
+        }
+        .padding(15)
+        .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(.cyan.opacity(0.26)))
+        .disabled(isSending)
+    }
+}
+
+private struct DeckButton: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: icon).foregroundStyle(color)
+                Text(title).font(.caption.weight(.semibold)).lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(11)
+            .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(color.opacity(0.28)))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.white)
+    }
+}
+
+private struct ActivityRail: View {
+    let messages: [ChatMessage]
+    let status: DashboardStatus?
+    let brain: BrainStatus?
+    let isConnected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            Label("LIVE ACTIVITY", systemImage: "dot.radiowaves.left.and.right")
+                .font(.caption.weight(.bold)).tracking(1.1).foregroundStyle(.cyan)
+            RailMetric("CONNECTION", isConnected ? "SECURE LOCAL" : "OFFLINE", isConnected ? .mint : .orange)
+            RailMetric("INTERACTIONS", "\(status?.interactions ?? 0)", .cyan)
+            RailMetric("DOCUMENTS", "\(brain?.knowledgeGraph?.totalDocuments ?? 0)", .mint)
+            Divider().overlay(.white.opacity(0.15))
+            Text("RECENT SIGNALS").font(.caption2.weight(.bold)).foregroundStyle(.white.opacity(0.55))
+            if messages.isEmpty {
+                Text("Awaiting your first command.").font(.caption).foregroundStyle(.white.opacity(0.65))
+            } else {
+                ForEach(messages.suffix(4).reversed()) { message in
+                    HStack(alignment: .top, spacing: 8) {
+                        Circle().fill(message.role == .assistant ? .cyan : .blue).frame(width: 6, height: 6).padding(.top, 5)
+                        Text(message.text).font(.caption).lineLimit(3).foregroundStyle(.white.opacity(0.78))
+                    }
+                }
+            }
+        }
+        .padding(15)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(.cyan.opacity(0.22)))
+    }
+}
+
+private struct RailMetric: View {
+    let label: String
+    let value: String
+    let color: Color
+
+    init(_ label: String, _ value: String, _ color: Color) {
+        self.label = label; self.value = value; self.color = color
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label).font(.caption2.weight(.bold)).tracking(0.8).foregroundStyle(.white.opacity(0.5))
+            Text(value).font(.caption.weight(.bold)).foregroundStyle(color)
+        }
     }
 }
 
@@ -420,6 +571,74 @@ private struct CommandComposer: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(.cyan.opacity(0.35)))
         .padding()
+    }
+}
+
+private struct VoiceConsole: View {
+    @ObservedObject var voiceInput: VoiceInputController
+    let isSending: Bool
+    let dismiss: () -> Void
+    let send: () -> Void
+    @State private var isOrbiting = false
+
+    private var status: String {
+        if isSending { return "PROCESSING YOUR REQUEST" }
+        if voiceInput.isListening { return "LISTENING" }
+        if voiceInput.transcript.isEmpty { return "VOICE CONSOLE READY" }
+        return "REVIEW TRANSCRIPT"
+    }
+
+    var body: some View {
+        ZStack {
+            HUDBackground()
+            VStack(spacing: 28) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("DAKSH AI").font(.headline.weight(.bold)).tracking(2).foregroundStyle(.white)
+                        Text("PRIVATE VOICE CONSOLE").font(.caption2.weight(.bold)).tracking(1.1).foregroundStyle(.cyan)
+                    }
+                    Spacer()
+                    Button("Close", systemImage: "xmark.circle.fill", action: dismiss)
+                        .labelStyle(.iconOnly).font(.title2).foregroundStyle(.white.opacity(0.8))
+                }
+                Spacer()
+                ZStack {
+                    Circle().stroke(.cyan.opacity(0.12), lineWidth: 1).frame(width: 300, height: 300)
+                    Circle().stroke(.cyan.opacity(0.24), lineWidth: 2).frame(width: 238, height: 238)
+                        .rotationEffect(.degrees(isOrbiting ? 360 : 0))
+                    Circle().trim(from: 0.07, to: voiceInput.isListening ? 0.92 : 0.66)
+                        .stroke(voiceInput.isListening ? .pink : .cyan, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                        .frame(width: 184, height: 184).rotationEffect(.degrees(-90))
+                    Image("daksh-mark", bundle: dakshLogoBundle)
+                        .resizable().scaledToFit().frame(width: 126, height: 126)
+                        .scaleEffect(voiceInput.isListening ? 1.08 : 1)
+                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: voiceInput.isListening)
+                }
+                .animation(.linear(duration: 12).repeatForever(autoreverses: false), value: isOrbiting)
+                Text(status).font(.caption.weight(.bold)).tracking(2).foregroundStyle(voiceInput.isListening ? .pink : .cyan)
+                Text(voiceInput.transcript.isEmpty ? "Tap the microphone and speak naturally." : voiceInput.transcript)
+                    .font(.title3).multilineTextAlignment(.center).foregroundStyle(.white)
+                    .frame(maxWidth: 620, minHeight: 56)
+                HStack(spacing: 16) {
+                    Button {
+                        voiceInput.toggle()
+                    } label: {
+                        Label(voiceInput.isListening ? "Stop listening" : "Speak", systemImage: voiceInput.isListening ? "stop.fill" : "mic.fill")
+                            .frame(minWidth: 130)
+                    }
+                    .buttonStyle(.borderedProminent).tint(voiceInput.isListening ? .pink : .cyan)
+                    .disabled(isSending)
+                    Button("Send", systemImage: "arrow.up.circle.fill", action: send)
+                        .buttonStyle(.bordered)
+                        .disabled(voiceInput.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+                }
+                Spacer()
+                Text("Speech is captured on this device. DAKSH does not send a request until you select Send.")
+                    .font(.caption).foregroundStyle(.white.opacity(0.58))
+            }
+            .padding(28)
+        }
+        .onAppear { isOrbiting = true }
     }
 }
 

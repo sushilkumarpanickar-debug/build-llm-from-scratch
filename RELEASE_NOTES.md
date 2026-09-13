@@ -1,3 +1,13 @@
+# v0.15.0 - Native Command Cockpit
+
+- Replaced the sparse native Chat page with a dense DAKSH command cockpit:
+  compact active core, quick-command deck, live activity rail, real backend
+  telemetry, persistent command dock, and responsive desktop/mobile layout.
+- Added a dedicated animated voice console with explicit listen, transcript
+  review, send, and local-device privacy states.
+- Each quick command is connected to DAKSH's real local assistant and private
+  memory rather than simulated interface activity.
+
 # v0.14.2 - Native Dashboard Layout
 
 - Made the DAKSH native app open as a dark, balanced, desktop-sized workspace
