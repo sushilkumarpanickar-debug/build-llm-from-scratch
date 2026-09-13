@@ -1,9 +1,11 @@
 import json
 import shutil
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from daksh.audit_log import AuditLog
 from daksh.opencode_agent import OpenCodeAgent
 from daksh.telegram_approval import TelegramApprovalError, TelegramApprovalService
 
@@ -86,6 +88,24 @@ class TelegramApprovalServiceTests(unittest.TestCase):
         with self.assertRaisesRegex(TelegramApprovalError, "TELEGRAM_BOT_TOKEN"):
             service.request_approval("job", "prompt")
 
+    @patch("daksh.telegram_approval.urlopen")
+    def test_audit_uses_fingerprint_not_prompt(self, urlopen_mock):
+        audit_log = AuditLog(TEST_DATA)
+        service = TelegramApprovalService(
+            bot_token="test-token",
+            allowed_chat_id="12345",
+            data_directory=TEST_DATA,
+            on_approved=lambda _: None,
+            audit_log=audit_log,
+        )
+        urlopen_mock.return_value = telegram_response({"ok": True, "result": {"message_id": 1}})
+        service.request_approval("job-3", "Sensitive requested work")
+
+        contents = (TEST_DATA / "audit_events.jsonl").read_text(encoding="utf-8")
+        self.assertIn("approval_requested", contents)
+        self.assertIn("prompt_digest", contents)
+        self.assertNotIn("Sensitive requested work", contents)
+
 
 class OpenCodeApprovalGateTests(unittest.TestCase):
     @patch("daksh.opencode_agent.shutil.which", return_value="/usr/local/bin/tool")
@@ -100,6 +120,33 @@ class OpenCodeApprovalGateTests(unittest.TestCase):
         agent._executor.shutdown(wait=True)
         self.assertEqual(job.state, "completed")
         self.assertEqual(run.call_count, 2)
+
+    @patch("daksh.opencode_agent.shutil.which", return_value="/usr/local/bin/tool")
+    @patch("daksh.opencode_agent.subprocess.run")
+    def test_restart_preserves_pending_job_and_fails_interrupted_execution(self, run, _which):
+        run.return_value = __import__("subprocess").CompletedProcess(["ollama"], 0, "", "")
+        with tempfile.TemporaryDirectory() as directory:
+            first = OpenCodeAgent(
+                ROOT, timeout_seconds=5, max_output_bytes=1024, state_directory=Path(directory)
+            )
+            pending = first.create_pending("Persist this approval-gated request")
+            self.assertEqual(pending.state, "pending_approval")
+            first._executor.shutdown(wait=True)
+
+            restored = OpenCodeAgent(
+                ROOT, timeout_seconds=5, max_output_bytes=1024, state_directory=Path(directory)
+            )
+            self.assertEqual(restored.get(pending.id).state, "pending_approval")
+            restored.get(pending.id).state = "queued"
+            restored._save_jobs()
+            restored._executor.shutdown(wait=True)
+
+            interrupted = OpenCodeAgent(
+                ROOT, timeout_seconds=5, max_output_bytes=1024, state_directory=Path(directory)
+            )
+            self.assertEqual(interrupted.get(pending.id).state, "failed")
+            self.assertIn("restarted", interrupted.get(pending.id).error)
+            interrupted._executor.shutdown(wait=True)
 
 
 if __name__ == "__main__":

@@ -36,12 +36,16 @@ def create_daksh_dashboard(*, start_telegram_polling: bool = True) -> Flask:
         project_root,
         timeout_seconds=DAKSH_OPENCODE_TIMEOUT_SECONDS,
         max_output_bytes=DAKSH_OPENCODE_MAX_OUTPUT_BYTES,
+        state_directory=DAKSH_DATA_DIR,
     )
+    audit_log = opencode._audit_log
     approvals = TelegramApprovalService(
         bot_token=TELEGRAM_BOT_TOKEN,
         allowed_chat_id=TELEGRAM_ALLOWED_CHAT_ID,
         data_directory=DAKSH_DATA_DIR,
         on_approved=opencode.approve,
+        on_denied=opencode.deny,
+        audit_log=audit_log,
         expires_seconds=DAKSH_TELEGRAM_APPROVAL_EXPIRY_SECONDS,
         request_timeout_seconds=DAKSH_TELEGRAM_REQUEST_TIMEOUT_SECONDS,
     )
@@ -237,7 +241,8 @@ def create_daksh_dashboard(*, start_telegram_polling: bool = True) -> Flask:
         try:
             job = opencode.create_pending(prompt)
             approval = approvals.request_approval(job.id, job.prompt)
-            job.approval_id = approval.id
+            if not opencode.set_approval(job.id, approval.id):
+                raise OpenCodeError("Unable to bind the approval to the pending OpenCode job.")
         except ValueError as error:
             return jsonify({"error": str(error)}), 400
         except (OpenCodeError, TelegramApprovalError) as error:

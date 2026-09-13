@@ -7,6 +7,8 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var isSending = false
     @Published var errorMessage: String?
     @Published private(set) var hasLoadedHistory = false
+    @Published private(set) var systemStatus: DashboardStatus?
+    @Published private(set) var isConnected = false
 
     private var client: APIClient?
 
@@ -20,6 +22,7 @@ final class ChatViewModel: ObservableObject {
             errorMessage = nil
         } catch {
             client = nil
+            isConnected = false
         }
     }
 
@@ -81,6 +84,19 @@ final class ChatViewModel: ObservableObject {
             )
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    func refreshStatus() async {
+        guard let client else {
+            isConnected = false
+            return
+        }
+        do {
+            systemStatus = try await client.loadStatus()
+            isConnected = true
+        } catch {
+            isConnected = false
         }
     }
 

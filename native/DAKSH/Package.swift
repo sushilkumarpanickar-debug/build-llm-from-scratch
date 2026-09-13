@@ -13,7 +13,8 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "DAKSH",
-            path: "Sources/DAKSH"
+            path: "Sources/DAKSH",
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "DAKSHTests",

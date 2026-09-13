@@ -1,3 +1,11 @@
+# v0.11.0 - Durable Approved Actions
+
+- Persisted approval-gated OpenCode jobs and their terminal results safely across
+  dashboard restarts.
+- Bound approvals to SHA-256 request fingerprints and recorded prompt-free audit
+  events for job and approval transitions.
+- Added the supplied transparent peacock logo to the native and web interfaces.
+
 # v0.10.0 - Local Mac Connection
 
 - Connected the macOS native app to the local DAKSH service automatically.

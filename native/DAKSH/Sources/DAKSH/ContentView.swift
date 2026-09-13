@@ -1,5 +1,11 @@
 import SwiftUI
 
+#if SWIFT_PACKAGE
+private let dakshLogoBundle = Bundle.module
+#else
+private let dakshLogoBundle = Bundle.main
+#endif
+
 struct ContentView: View {
     @AppStorage("tailnetBaseURL") private var tailnetBaseURL = ""
     @StateObject private var viewModel = ChatViewModel()
@@ -24,6 +30,10 @@ struct ContentView: View {
             #endif
             viewModel.configure(baseURLString: tailnetBaseURL)
             await viewModel.loadHistory()
+            while !Task.isCancelled {
+                await viewModel.refreshStatus()
+                try? await Task.sleep(for: .seconds(5))
+            }
         }
         .onChange(of: tailnetBaseURL) { _, newValue in
             viewModel.configure(baseURLString: newValue)
@@ -98,10 +108,11 @@ private struct CommandCenter: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 20) {
-                        CoreHero(isProcessing: viewModel.isSending)
+                        CoreHero(isProcessing: viewModel.isSending, isConnected: viewModel.isConnected)
                         StatusGrid(
-                            messages: viewModel.messages.count,
+                            status: viewModel.systemStatus,
                             isProcessing: viewModel.isSending,
+                            isConnected: viewModel.isConnected,
                             showSettings: $showSettings
                         )
                         ConversationPanel(
@@ -159,6 +170,7 @@ private struct CommandCenter: View {
 
 private struct CoreHero: View {
     let isProcessing: Bool
+    let isConnected: Bool
 
     var body: some View {
         ZStack {
@@ -169,11 +181,15 @@ private struct CoreHero: View {
                 ZStack {
                     Circle().stroke(.cyan.opacity(0.25), lineWidth: 22).frame(width: 126, height: 126)
                     Circle().trim(from: 0.08, to: isProcessing ? 0.94 : 0.72).stroke(.cyan, style: StrokeStyle(lineWidth: 4, lineCap: .round)).rotationEffect(.degrees(-90)).frame(width: 104, height: 104)
-                    Image(systemName: isProcessing ? "sparkles" : "brain.head.profile").font(.system(size: 38)).foregroundStyle(.cyan).symbolEffect(.pulse, isActive: isProcessing)
+                    Image("daksh-mark", bundle: dakshLogoBundle)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(10)
+                        .symbolEffect(.pulse, isActive: isProcessing)
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     Text("DAKSH AI").font(.system(size: 32, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                    Text(isProcessing ? "PROCESSING YOUR REQUEST" : "PRIVATE LOCAL AI CORE")
+                    Text(isProcessing ? "PROCESSING YOUR REQUEST" : (isConnected ? "PRIVATE LOCAL AI CORE" : "CONNECTING TO DAKSH"))
                         .font(.caption.weight(.bold)).tracking(1.4).foregroundStyle(.cyan)
                     Text("Local model · iCloud memory · Tailnet access")
                         .font(.subheadline).foregroundStyle(.white.opacity(0.72))
@@ -187,8 +203,9 @@ private struct CoreHero: View {
 }
 
 private struct StatusGrid: View {
-    let messages: Int
+    let status: DashboardStatus?
     let isProcessing: Bool
+    let isConnected: Bool
     @Binding var showSettings: Bool
 
     var body: some View {
@@ -199,11 +216,11 @@ private struct StatusGrid: View {
     }
 
     @ViewBuilder private var cards: some View {
-        StatusCard(title: "AI Core", value: isProcessing ? "Working" : "Ready", icon: "cpu.fill", color: .cyan)
-        StatusCard(title: "Memory", value: "iCloud sync", icon: "brain.head.profile", color: .mint)
-        StatusCard(title: "Conversations", value: "\(messages) messages", icon: "bubble.left.and.bubble.right.fill", color: .purple)
+        StatusCard(title: "AI Core", value: isProcessing ? "Working" : (isConnected ? "Ready" : "Offline"), icon: "cpu.fill", color: .cyan)
+        StatusCard(title: "Memory", value: "\(status?.contextSize ?? 0) records", icon: "brain.head.profile", color: .mint)
+        StatusCard(title: "Conversations", value: "\(status?.interactions ?? 0) total", icon: "bubble.left.and.bubble.right.fill", color: .purple)
         Button { showSettings = true } label: {
-            StatusCard(title: "Network", value: "Tailnet", icon: "lock.shield.fill", color: .green)
+            StatusCard(title: "Network", value: isConnected ? "Connected" : "Unavailable", icon: "lock.shield.fill", color: isConnected ? .green : .orange)
         }
         .buttonStyle(.plain)
     }

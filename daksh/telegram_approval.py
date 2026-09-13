@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import hashlib
 import threading
 import time
 import uuid
@@ -15,6 +16,7 @@ from typing import Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from daksh.audit_log import AuditLog
 
 class TelegramApprovalError(RuntimeError):
     """Raised when the Telegram approval gate cannot safely operate."""
@@ -29,6 +31,7 @@ class Approval:
     status: str
     created_at: float
     expires_at: float
+    prompt_digest: str
 
 
 class TelegramApprovalService:
@@ -43,6 +46,8 @@ class TelegramApprovalService:
         allowed_chat_id: str | None,
         data_directory: Path,
         on_approved: Callable[[str], None],
+        on_denied: Callable[[str], None] | None = None,
+        audit_log: AuditLog | None = None,
         expires_seconds: int = 900,
         request_timeout_seconds: float = 10,
     ) -> None:
@@ -50,6 +55,8 @@ class TelegramApprovalService:
         self.allowed_chat_id = allowed_chat_id.strip() if isinstance(allowed_chat_id, str) else ""
         self.path = data_directory / "telegram_approvals.json"
         self.on_approved = on_approved
+        self.on_denied = on_denied
+        self.audit_log = audit_log
         self.expires_seconds = expires_seconds
         self.request_timeout_seconds = request_timeout_seconds
         self._lock = threading.RLock()
@@ -77,6 +84,7 @@ class TelegramApprovalService:
             status="pending",
             created_at=now,
             expires_at=now + self.expires_seconds,
+            prompt_digest=hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
         )
         with self._lock:
             state = self._load()
@@ -86,8 +94,16 @@ class TelegramApprovalService:
                 "status": approval.status,
                 "created_at": approval.created_at,
                 "expires_at": approval.expires_at,
+                "prompt_digest": approval.prompt_digest,
             }
             self._save(state)
+        if self.audit_log:
+            self.audit_log.record(
+                "approval_requested",
+                approval_id=approval.id,
+                job_id=job_id,
+                prompt_digest=approval.prompt_digest,
+            )
         excerpt = prompt.replace("\n", " ").strip()[:500]
         message = (
             f"DAKSH OpenCode approval required\n"
@@ -112,6 +128,7 @@ class TelegramApprovalService:
             raise TelegramApprovalError("Telegram returned an invalid updates response.")
 
         approved_jobs: list[str] = []
+        denied_jobs: list[str] = []
         with self._lock:
             state = self._load()
             self._expire(state, time.time())
@@ -139,11 +156,24 @@ class TelegramApprovalService:
                     record["status"] = "expired"
                     continue
                 record["status"] = "approved" if action == "APPROVE" else "denied"
+                if self.audit_log:
+                    self.audit_log.record(
+                        "approval_resolved",
+                        approval_id=approval_id,
+                        job_id=record.get("job_id"),
+                        outcome=record["status"],
+                        prompt_digest=record.get("prompt_digest"),
+                    )
                 if action == "APPROVE" and isinstance(record.get("job_id"), str):
                     approved_jobs.append(record["job_id"])
+                if action == "DENY" and isinstance(record.get("job_id"), str):
+                    denied_jobs.append(record["job_id"])
             self._save(state)
         for job_id in approved_jobs:
             self.on_approved(job_id)
+        if self.on_denied:
+            for job_id in denied_jobs:
+                self.on_denied(job_id)
         return len(approved_jobs)
 
     def start_polling(self, interval_seconds: float = 2) -> None:

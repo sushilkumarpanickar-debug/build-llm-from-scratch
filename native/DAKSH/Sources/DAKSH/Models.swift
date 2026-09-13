@@ -59,3 +59,16 @@ struct InteractionRequest: Encodable, Sendable {
     let input: String
     let type = "text"
 }
+
+struct DashboardStatus: Decodable, Sendable {
+    let cloudFallbackEnabled: Bool
+    let contextSize: Int
+    let interactions: Int
+    let status: String
+
+    enum CodingKeys: String, CodingKey {
+        case cloudFallbackEnabled = "cloud_fallback_enabled"
+        case contextSize = "context_size"
+        case interactions, status
+    }
+}

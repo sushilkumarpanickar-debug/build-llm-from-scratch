@@ -63,6 +63,10 @@ struct APIClient: Sendable {
         return try await perform(request)
     }
 
+    func loadStatus() async throws -> DashboardStatus {
+        try await perform(URLRequest(url: endpoint(path: "api/daksh/status")))
+    }
+
     private func endpoint(path: String) -> URL {
         baseURL.appending(path: path)
     }
