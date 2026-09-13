@@ -7,15 +7,6 @@ let busy = false;
 let recorder;
 let audioChunks = [];
 
-const headings = {
-  chat: 'Good evening. Systems are standing by.',
-  knowledge: 'Memory architecture, under your control.',
-  documents: 'Your local knowledge, indexed and ready.',
-  tasks: 'Mission planning and agent readiness.',
-  settings: 'Every capability, truthfully mapped.'
-};
-const labels = {chat:'COMMAND CENTRE',knowledge:'MEMORY VAULT',documents:'KNOWLEDGE FILES',tasks:'MISSIONS',settings:'SYSTEMS MATRIX'};
-
 function el(tag, text, className) {
   const node = document.createElement(tag);
   if (text !== undefined) node.textContent = text;
@@ -28,11 +19,13 @@ function notice(message = '', error = false) {
   $('notice').classList.toggle('error', error);
 }
 
+function currentScope() { return $('scope').value || 'Personal'; }
+
 async function jsonRequest(path, data, method = 'POST') {
   const options = {method, headers: {'X-Workspace-Token': state.token}};
   if (data) {
     options.headers['Content-Type'] = 'application/json';
-    options.body = JSON.stringify({...data, scope: $('scope').value});
+    options.body = JSON.stringify({...data, scope: currentScope()});
   }
   const response = await fetch(path, options);
   const result = await response.json();
@@ -41,31 +34,29 @@ async function jsonRequest(path, data, method = 'POST') {
 }
 
 async function load(conversationId) {
-  const query = new URLSearchParams({scope: $('scope').value});
+  const query = new URLSearchParams({scope: currentScope()});
   if (conversationId) query.set('conversation_id', conversationId);
   const response = await fetch('/api/state?' + query);
-  state = await response.json();
-  if (!response.ok) throw Error(state.error || 'Could not load the workspace');
+  const result = await response.json();
+  if (!response.ok) throw Error(result.error || 'Could not load the workspace');
+  state = result;
+  const scope = $('scope');
+  scope.replaceChildren(...state.scopes.map(name => new Option(name, name, false, name === state.scope)));
   render();
 }
 
-function show(name) {
+function show(name, message = '', trigger = null) {
   document.querySelectorAll('.view').forEach(node => { node.hidden = node.id !== name; });
-  document.querySelectorAll('nav button').forEach(node => node.classList.toggle('active', node.dataset.view === name));
-  $('heading').textContent = headings[name];
-  $('breadcrumb').textContent = $('scope').value.toUpperCase() + ' / ' + labels[name];
+  document.querySelectorAll('.left-rail nav button').forEach(node => node.classList.remove('active'));
+  const activeNav = trigger && trigger.closest('.left-rail nav') ? trigger : document.querySelector(`.left-rail nav button[data-view="${name}"]:not([data-message])`);
+  if (activeNav) activeNav.classList.add('active');
   window.scrollTo({top: 0, behavior: 'smooth'});
+  if (message) notice(message);
 }
 
 function render() {
-  renderModels();
-  renderConversations();
-  renderMessages();
-  renderNotes();
-  renderDocuments();
-  renderTasks();
-  renderSettings();
-  renderMap();
+  renderModels(); renderConversations(); renderMessages(); renderNotes();
+  renderDocuments(); renderTasks(); renderSettings(); renderDashboard(); renderCapabilities();
 }
 
 function renderModels() {
@@ -76,7 +67,6 @@ function renderModels() {
     if (!state.models.length) select.append(new Option('No local chat model', ''));
     state.models.forEach(name => select.append(new Option(name, name, false, name === current)));
   }
-  $('model-status').textContent = state.models.length ? (current || state.models[0]).toUpperCase() : 'OLLAMA MODEL OFFLINE';
 }
 
 function renderConversations() {
@@ -86,9 +76,7 @@ function renderConversations() {
 }
 
 function sourceChip(source) {
-  const label = source.type === 'document'
-    ? `${source.title} · ${source.location}`
-    : `Memory ${source.id} · ${source.title}`;
+  const label = source.type === 'document' ? `${source.title} · ${source.location}` : `Memory ${source.id} · ${source.title}`;
   return el('span', label, 'source-chip');
 }
 
@@ -97,7 +85,7 @@ function renderMessages() {
   root.replaceChildren();
   if (!state.messages.length) {
     const empty = el('div', undefined, 'empty');
-    empty.append(el('span', '◈', 'symbol'), el('h2', 'What shall we work on?'), el('p', 'Ask DAKSH, use the microphone, or teach it with your local documents. Your domain controls which memory and files can be retrieved.'));
+    empty.append(el('b', '◈'), el('h2', 'What shall we work on?'), el('p', 'Ask DAKSH, use the microphone, or teach it with your local documents. The active domain controls retrieval.'));
     root.append(empty);
     $('source-panel').replaceChildren(el('p', 'No sources retrieved yet.'));
     return;
@@ -153,10 +141,8 @@ function renderDocuments() {
     const remove = el('button', 'REMOVE', 'text-button danger');
     remove.addEventListener('click', async () => {
       if (!confirm(`Remove ${document.filename} and its local index?`)) return;
-      try {
-        await jsonRequest(`/api/documents/${document.id}?scope=${encodeURIComponent($('scope').value)}`, null, 'DELETE');
-        await load();
-      } catch (error) { notice(error.message, true); }
+      try { await jsonRequest(`/api/documents/${document.id}?scope=${encodeURIComponent(currentScope())}`, null, 'DELETE'); await load(); }
+      catch (error) { notice(error.message, true); }
     });
     card.append(top, el('h3', document.filename), el('p', `${document.chunk_count} searchable chunks · added ${new Date(document.created).toLocaleString()}`), remove);
     root.append(card);
@@ -170,7 +156,7 @@ function renderTasks() {
   state.tasks.forEach(task => {
     const card = el('article', undefined, 'card');
     const select = document.createElement('select');
-    ['planned','in_progress','completed'].forEach(status => select.append(new Option(status.replace('_', ' '), status, false, task.status === status)));
+    ['planned', 'in_progress', 'completed'].forEach(status => select.append(new Option(status.replace('_', ' '), status, false, task.status === status)));
     select.addEventListener('change', async () => {
       try { await jsonRequest('/api/tasks/status', {id: task.id, status: select.value}); await load(); }
       catch (error) { notice(error.message, true); }
@@ -187,22 +173,89 @@ function renderSettings() {
   embedding.replaceChildren();
   const name = health.embedding_model || state.settings.embedding_model || 'nomic-embed-text';
   embedding.append(new Option(name, name, true, true));
-}
-
-function renderMap() {
-  $('map-memory').textContent = `${state.notes.length} records`;
-  $('map-docs').textContent = `${state.documents.filter(item => item.status === 'ready').length} indexed`;
-  $('map-tasks').textContent = `${state.tasks.length} staged`;
-  $('map-domain').textContent = state.scope.toUpperCase();
-  $('map-model').textContent = state.models.length ? (state.settings.model || state.models[0]) : 'offline';
-  $('map-voice').textContent = health.transcription ? 'local ready' : 'offline';
-  $('node-total').textContent = `${state.notes.length + state.documents.reduce((sum, item) => sum + item.chunk_count, 0)} NODES`;
   $('note-category').replaceChildren(...state.memory_categories.map(category => new Option(category.replaceAll('_', ' '), category)));
 }
 
+function addFeed(icon, title, detail, status, warn = false) {
+  const item = el('div', undefined, 'feed-item' + (warn ? ' warn' : ''));
+  const copy = el('span'); copy.append(el('strong', title), el('small', detail));
+  item.append(el('i', icon), copy, el('b', status)); $('intelligence-feed').append(item);
+}
+
+function addAgent(icon, title, detail, className = '') {
+  const item = el('div', undefined, 'agent-card ' + className);
+  const copy = el('span'); copy.append(el('strong', title), el('small', detail));
+  item.append(el('i', icon), copy, el('b', className === 'offline' ? '○' : '●')); $('agent-grid').append(item);
+}
+
+function renderDashboard() {
+  const readyDocs = state.documents.filter(item => item.status === 'ready');
+  const openTasks = state.tasks.filter(item => item.status !== 'completed');
+  const modelCount = state.models.length;
+  const coreOnline = health.status === 'ready' || modelCount > 0;
+  $('nav-task-count').textContent = openTasks.length;
+  $('nav-chat-count').textContent = state.conversations.length;
+  $('overview-core').textContent = coreOnline ? 'Active' : 'Limited';
+  $('overview-memory').textContent = `${state.notes.length} stored`;
+  $('overview-voice').textContent = health.transcription ? 'Ready' : 'Offline';
+  $('overview-agents').textContent = `${openTasks.length} missions`;
+  $('overview-models').textContent = `${modelCount} connected`;
+  $('core-state').textContent = coreOnline ? 'ALL SYSTEMS OPERATIONAL' : 'LOCAL CORE LIMITED';
+  $('voice-status-dot').textContent = health.transcription ? '●' : '○';
+  $('voice-label').textContent = health.transcription ? 'Ready' : 'Unavailable';
+  $('dock-status').textContent = health.transcription ? 'Tap to speak' : 'Voice offline';
+  $('monitor-memory').textContent = state.notes.length;
+  $('monitor-docs').textContent = readyDocs.length;
+  $('memory-gauge').style.setProperty('--value', Math.min(100, 12 + state.notes.length * 7));
+  $('docs-gauge').style.setProperty('--value', Math.min(100, 12 + readyDocs.length * 9));
+  $('insight-memory').textContent = state.notes.length;
+  $('insight-docs').textContent = readyDocs.length;
+  $('insight-chat').textContent = state.conversations.length;
+
+  $('intelligence-feed').replaceChildren();
+  addFeed('◉', 'Local inference core', modelCount ? state.settings.model || state.models[0] : 'Start Ollama to connect', modelCount ? 'ONLINE' : 'OFFLINE', !modelCount);
+  addFeed('▱', 'Knowledge index', `${readyDocs.length} files ready for retrieval`, readyDocs.length ? 'READY' : 'EMPTY', !readyDocs.length);
+  addFeed('◇', 'Mission queue', `${openTasks.length} open · ${state.tasks.length} total`, openTasks.length ? 'ACTIVE' : 'CLEAR');
+  addFeed('◖', 'Voice interface', health.transcription ? 'Faster-Whisper running locally' : 'Transcription dependency unavailable', health.transcription ? 'READY' : 'OFFLINE', !health.transcription);
+  addFeed('✓', 'Privacy boundary', health.local_only ? 'Bound to this Mac only' : 'Review server binding', health.local_only ? 'LOCAL' : 'CHECK', !health.local_only);
+
+  $('agent-grid').replaceChildren();
+  addAgent('▱', 'Memory Agent', `${state.notes.length} records`, health.database ? '' : 'offline');
+  addAgent('⌕', 'Retrieval Agent', `${readyDocs.length} indexed files`, health.embedding_model ? '' : 'offline');
+  addAgent('◖', 'Voice Agent', health.transcription ? 'Ready' : 'Unavailable', health.transcription ? '' : 'offline');
+  addAgent('◇', 'Mission Planner', `${openTasks.length} open`, modelCount ? 'standby' : 'offline');
+  addAgent('◉', 'System Agent', health.database ? 'SQLite online' : 'Database offline', health.database ? '' : 'offline');
+  addAgent('⌁', 'Action Agent', 'Phase 2', 'offline');
+
+  $('timeline').replaceChildren();
+  const events = state.tasks.slice(0, 3).map(task => ({time: new Date(task.created).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}), title: task.title, status: task.status.replace('_', ' ')}));
+  if (!events.length) events.push(
+    {time: 'NOW', title: 'Local AI core ready', status: modelCount ? 'online' : 'limited'},
+    {time: 'NOW', title: 'Knowledge index scanned', status: `${readyDocs.length} files`},
+    {time: 'NEXT', title: 'Awaiting your directive', status: 'standby'}
+  );
+  events.forEach(event => {
+    const row = el('div', undefined, 'timeline-row');
+    row.append(el('time', event.time), el('span', event.title), el('b', event.status.toUpperCase())); $('timeline').append(row);
+  });
+
+  const services = [
+    [state.settings.model || state.models[0] || 'Ollama', modelCount ? 'CHAT ONLINE' : 'CHAT OFFLINE', modelCount],
+    [health.embedding_model || state.settings.embedding_model || 'Embeddings', health.embedding_model ? 'RAG ONLINE' : 'RAG OFFLINE', !!health.embedding_model],
+    [`Whisper ${state.settings.stt_model || 'tiny'}`, health.transcription ? 'VOICE ONLINE' : 'VOICE OFFLINE', !!health.transcription],
+    ['macOS Speech', health.speech ? 'OUTPUT READY' : 'OUTPUT OFFLINE', !!health.speech]
+  ];
+  $('llm-count').textContent = `${services.filter(item => item[2]).length} CONNECTED`;
+  $('llm-grid').replaceChildren();
+  services.forEach(([name, status, online]) => {
+    const card = el('div', undefined, 'llm-card ' + (online ? 'online' : ''));
+    const copy = el('span'); copy.append(el('strong', name), el('small', status));
+    card.append(el('i', online ? '●' : '○'), copy); $('llm-grid').append(card);
+  });
+}
+
 function renderCapabilities() {
-  const root = $('capabilities');
-  root.replaceChildren();
+  const root = $('capabilities'); root.replaceChildren();
   const entries = [
     ['Ollama local inference', health.models && health.models.length ? health.models.join(', ') : 'OFFLINE', !!(health.models && health.models.length)],
     ['Semantic document search', health.embedding_model || 'MODEL MISSING', !!health.embedding_model],
@@ -215,97 +268,103 @@ function renderCapabilities() {
     const item = el('div', undefined, 'capability ' + (live ? 'live' : 'planned'));
     item.append(el('strong', name), el('span', status)); root.append(item);
   });
-  $('embedding-state').textContent = health.embedding_model ? 'ONLINE' : 'OFFLINE';
-  $('core-state').textContent = health.status === 'ready' ? 'LOCAL CORE ONLINE' : 'LOCAL CORE LIMITED';
 }
 
 async function scan() {
   try {
-    const response = await fetch('/api/health');
-    health = await response.json();
-    renderCapabilities(); renderSettings(); renderMap();
+    const response = await fetch('/api/health'); health = await response.json();
+    renderSettings(); renderCapabilities(); renderDashboard();
   } catch (error) { notice('System scan failed: ' + error.message, true); }
 }
 
-async function setBusy(value) {
+function setBusy(value) {
   busy = value;
   document.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = value; });
-  $('inference-state').textContent = value ? 'PROCESSING' : 'STANDBY';
   document.body.classList.toggle('thinking', value);
+  $('dock-status').textContent = value ? 'Processing locally' : (health.transcription ? 'Tap to speak' : 'Voice offline');
+}
+
+function setRecordingUi(recording) {
+  for (const id of ['mic', 'side-mic', 'dock-mic', 'quick-voice']) $(id).classList.toggle('recording', recording);
+  $('mic').textContent = recording ? '■ STOP' : '◉ MIC';
+  $('voice-label').textContent = recording ? 'Listening' : (health.transcription ? 'Ready' : 'Unavailable');
+  $('dock-status').textContent = recording ? 'Listening locally · tap to stop' : (health.transcription ? 'Tap to speak' : 'Voice offline');
 }
 
 async function beginRecording() {
   if (!navigator.mediaDevices || !window.MediaRecorder) throw Error('This browser does not support microphone recording.');
   const stream = await navigator.mediaDevices.getUserMedia({audio: true});
-  audioChunks = [];
-  recorder = new MediaRecorder(stream);
+  audioChunks = []; recorder = new MediaRecorder(stream);
   recorder.addEventListener('dataavailable', event => { if (event.data.size) audioChunks.push(event.data); });
   recorder.addEventListener('stop', async () => {
-    stream.getTracks().forEach(track => track.stop());
-    $('mic').classList.remove('recording'); $('mic').textContent = '◉ MIC';
+    stream.getTracks().forEach(track => track.stop()); setRecordingUi(false);
     const blob = new Blob(audioChunks, {type: recorder.mimeType || 'audio/webm'});
-    const form = new FormData();
-    form.append('scope', $('scope').value); form.append('file', blob, 'voice.webm');
+    const form = new FormData(); form.append('scope', currentScope()); form.append('file', blob, 'voice.webm');
     try {
       notice('Transcribing on this Mac…');
-      const response = await fetch('/api/voice/transcribe', {method:'POST', headers:{'X-Workspace-Token':state.token}, body:form});
+      const response = await fetch('/api/voice/transcribe', {method: 'POST', headers: {'X-Workspace-Token': state.token}, body: form});
       const result = await response.json();
       if (!response.ok) throw Error(result.error || 'Transcription failed');
-      $('prompt').value = result.text; notice(result.text ? 'Voice input is ready to send.' : 'No speech was detected.'); $('prompt').focus();
+      $('prompt').value = result.text; show('chat');
+      notice(result.text ? 'Voice input is ready to send.' : 'No speech was detected.'); $('prompt').focus();
     } catch (error) { notice(error.message, true); }
   });
-  recorder.start(); $('mic').classList.add('recording'); $('mic').textContent = '■ STOP'; notice('Listening locally. Press STOP when finished.');
+  recorder.start(); setRecordingUi(true); notice('Listening locally. Tap the microphone again when finished.');
 }
 
-document.querySelectorAll('nav button').forEach(button => button.addEventListener('click', () => show(button.dataset.view)));
-document.querySelectorAll('[data-view]:not(nav button)').forEach(button => button.addEventListener('click', () => show(button.dataset.view)));
-$('scope').addEventListener('change', async () => { notice(); await load(); show('chat'); });
+async function toggleRecording() {
+  try { if (recorder && recorder.state === 'recording') recorder.stop(); else await beginRecording(); }
+  catch (error) { notice(error.message, true); }
+}
+
+document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => show(button.dataset.view, button.dataset.message, button)));
+$('scope').addEventListener('change', async () => { notice(); await load(); show('dashboard'); });
 $('conversation').addEventListener('change', () => load($('conversation').value).catch(error => notice(error.message, true)));
 $('search').addEventListener('input', renderNotes);
 $('refresh').addEventListener('click', scan);
+$('global-search').addEventListener('keydown', event => {
+  if (event.key !== 'Enter') return;
+  const query = event.target.value.trim(); if (!query) return;
+  $('search').value = query; renderNotes(); show('knowledge');
+});
 
 $('new-conversation').addEventListener('click', async () => {
-  try { const created = await jsonRequest('/api/conversations', {title:'New conversation'}); await load(created.id); }
+  try { const created = await jsonRequest('/api/conversations', {title: 'New conversation'}); await load(created.id); show('chat'); }
   catch (error) { notice(error.message, true); }
 });
 $('delete-conversation').addEventListener('click', async () => {
   if (!state.conversation || !confirm(`Delete “${state.conversation.title}” and its messages?`)) return;
-  try {
-    const result = await jsonRequest(`/api/conversations/${state.conversation.id}?scope=${encodeURIComponent($('scope').value)}`, null, 'DELETE');
-    await load(result.next_conversation_id);
-  } catch (error) { notice(error.message, true); }
+  try { const result = await jsonRequest(`/api/conversations/${state.conversation.id}?scope=${encodeURIComponent(currentScope())}`, null, 'DELETE'); await load(result.next_conversation_id); }
+  catch (error) { notice(error.message, true); }
 });
 
 $('chat-form').addEventListener('submit', async event => {
   event.preventDefault(); if (busy) return;
   const prompt = $('prompt').value.trim(); if (!prompt) return;
-  await setBusy(true); notice('DAKSH is reasoning locally…');
+  setBusy(true); notice('DAKSH is reasoning locally…');
   try {
-    await jsonRequest('/api/chat', {prompt, model:$('model').value, conversation_id:state.conversation.id, speak:true});
+    await jsonRequest('/api/chat', {prompt, model: $('model').value, conversation_id: state.conversation.id, speak: true});
     $('prompt').value = ''; await load(state.conversation.id); notice();
   } catch (error) { notice(error.message, true); }
-  finally { await setBusy(false); }
+  finally { setBusy(false); }
 });
 
-$('mic').addEventListener('click', async () => {
-  try { if (recorder && recorder.state === 'recording') recorder.stop(); else await beginRecording(); }
-  catch (error) { notice(error.message, true); }
-});
+for (const id of ['mic', 'side-mic', 'dock-mic', 'quick-voice', 'overview-voice-button']) $(id).addEventListener('click', toggleRecording);
 
 $('note-form').addEventListener('submit', async event => {
   event.preventDefault();
   try {
-    await jsonRequest('/api/memories', {category:$('note-category').value,title:$('note-title').value,content:$('note-content').value,source:$('note-source').value});
+    await jsonRequest('/api/memories', {category: $('note-category').value, title: $('note-title').value, content: $('note-content').value, source: $('note-source').value});
     event.target.reset(); $('note-source').value = 'My explicit note'; await load(); notice('Memory stored in this domain.');
   } catch (error) { notice(error.message, true); }
 });
 
 $('document-form').addEventListener('submit', async event => {
   event.preventDefault(); const file = $('document-file').files[0]; if (!file) return;
-  const form = new FormData(); form.append('scope', $('scope').value); form.append('file', file);
+  const form = new FormData(); form.append('scope', currentScope()); form.append('file', file);
   $('upload-progress').hidden = false; event.submitter.disabled = true; notice('Indexing locally…');
   try {
-    const response = await fetch('/api/documents', {method:'POST',headers:{'X-Workspace-Token':state.token},body:form});
+    const response = await fetch('/api/documents', {method: 'POST', headers: {'X-Workspace-Token': state.token}, body: form});
     const result = await response.json(); if (!response.ok) throw Error(result.error || 'Indexing failed');
     event.target.reset(); await load(); notice(result.duplicate ? 'This file was already indexed.' : `${file.name} is ready for local retrieval.`);
   } catch (error) { notice(error.message, true); }
@@ -313,18 +372,25 @@ $('document-form').addEventListener('submit', async event => {
 });
 
 $('task-form').addEventListener('submit', async event => {
-  event.preventDefault(); await setBusy(true);
-  try { await jsonRequest('/api/tasks', {prompt:$('task-prompt').value,model:$('model').value}); event.target.reset(); await load(); notice('Mission plan staged.'); }
-  catch (error) { notice(error.message, true); } finally { await setBusy(false); }
+  event.preventDefault(); setBusy(true);
+  try { await jsonRequest('/api/tasks', {prompt: $('task-prompt').value, model: $('model').value}); event.target.reset(); await load(); notice('Mission plan staged.'); }
+  catch (error) { notice(error.message, true); }
+  finally { setBusy(false); }
 });
 
 $('settings-form').addEventListener('submit', async event => {
   event.preventDefault();
   try {
-    await jsonRequest('/api/settings', {model:$('settings-model').value,embedding_model:$('embedding-model').value,stt_model:$('stt-model').value,speech_enabled:String($('speech-enabled').checked)});
-    await load(state.conversation.id); notice('Local settings saved.');
+    await jsonRequest('/api/settings', {model: $('settings-model').value, embedding_model: $('embedding-model').value, stt_model: $('stt-model').value, speech_enabled: String($('speech-enabled').checked)});
+    await load(state.conversation && state.conversation.id); notice('Local settings saved.');
   } catch (error) { notice(error.message, true); }
 });
 
-setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString([], {hour12:false}); }, 1000);
+function updateClock() {
+  const now = new Date();
+  $('clock').textContent = now.toLocaleTimeString([], {hour12: false});
+  $('date').textContent = now.toLocaleDateString([], {weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'}).toUpperCase();
+}
+
+updateClock(); setInterval(updateClock, 1000); show('dashboard');
 load().then(scan).catch(error => notice(error.message, true));

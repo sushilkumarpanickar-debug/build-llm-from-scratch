@@ -32,7 +32,10 @@ class WorkspaceTest(unittest.TestCase):
     def test_assets_health_and_host_protection(self):
         page = self.client.get("/")
         self.assertEqual(page.status_code, 200)
-        self.assertIn("SECOND BRAIN MAP", page.text)
+        self.assertIn("AI CORE OVERVIEW", page.text)
+        self.assertIn("LIVE INTELLIGENCE FEED", page.text)
+        self.assertIn("MISSION TIMELINE", page.text)
+        self.assertIn("TALK TO DAKSH", page.text)
         self.assertEqual(self.client.get("/snns_logo.png").content[:8], b"\x89PNG\r\n\x1a\n")
         self.assertTrue(self.client.get("/api/health").json()["local_only"])
         self.assertEqual(self.client.get("/api/state", headers={"Host": "evil.example"}).status_code, 403)

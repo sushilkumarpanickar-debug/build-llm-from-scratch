@@ -31,16 +31,17 @@ Open <http://127.0.0.1:9001>. The server deliberately binds only to the loopback
 - Optional spoken assistant replies through macOS `say`.
 - Local mission planning and status tracking.
 - Live health matrix for inference, embeddings, voice, speech, database, and network boundary.
+- A command-center dashboard with AI core status, live intelligence, active local agents, mission timeline, system monitor, memory insights, model status, quick commands, and a persistent voice dock.
 
 Runtime data is saved under `local_workspace/data/` and excluded from Git. The SQLite database is not encrypted; rely on macOS account and disk encryption for device-level protection. Domain separation is contextual inside a single-user application, not user authentication.
 
 ## Document learning
 
-Upload a file from **Knowledge files**. DAKSH extracts page or sheet text, splits it into overlapping chunks, creates embeddings through local Ollama, and saves the vectors in SQLite. Chat retrieves the most relevant chunks from the active domain and exposes their sources with the answer. This teaches DAKSH your material without retraining or changing the base model.
+Upload a file from **Knowledge Base**. DAKSH extracts page or sheet text, splits it into overlapping chunks, creates embeddings through local Ollama, and saves the vectors in SQLite. Chat retrieves the most relevant chunks from the active domain and exposes their sources with the answer. This teaches DAKSH your material without retraining or changing the base model.
 
 ## Voice
 
-The first microphone transcription downloads the selected open Whisper model to the local Hugging Face cache. `tiny` is the default for speed. Browser microphone permission is required. Spoken replies are disabled until enabled in **Systems matrix**.
+The first microphone transcription downloads the selected open Whisper model to the local Hugging Face cache. `tiny` is the default for speed. Browser microphone permission is required. Spoken replies are disabled until enabled in **Tools & Skills**.
 
 ## Validation
 
