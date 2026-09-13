@@ -1,3 +1,11 @@
+# v0.9.0 - Telegram Approval Gate
+
+- Added Telegram approvals for OpenCode development jobs, bound to a single
+  configured private chat.
+- Added persistent, expiring approvals requiring exact `APPROVE <id>` or
+  `DENY <id>` commands before a coding job can start.
+- Verified the bundled local `qwen2.5:3b` model runs successfully with Ollama.
+
 # v0.8.0 - Local OpenCode Development
 
 - Added OpenCode as a pinned upstream submodule.

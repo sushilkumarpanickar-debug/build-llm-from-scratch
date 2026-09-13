@@ -185,10 +185,12 @@ configuration.
 
 ## Local OpenCode Coding Agent
 
-DAKSH can queue noninteractive coding jobs from the local dashboard at
+DAKSH can request noninteractive coding jobs from the local dashboard at
 `POST /api/opencode/jobs` with `{"prompt": "..."}` and retrieve the bounded
-result at `GET /api/opencode/jobs/<id>`. Jobs are automatic **only** in this
-DAKSH repository; the wrapper rejects every other workspace.
+result at `GET /api/opencode/jobs/<id>`. Every submitted job remains
+`pending_approval` until the configured Telegram chat approves it. Jobs are
+automatic **only** in this DAKSH repository; the wrapper rejects every other
+workspace.
 
 Install the required local tools on macOS, then start Ollama and pull the
 fixed model:
@@ -214,6 +216,26 @@ existing CSP permits connections only to the same origin. Set
 `DAKSH_OPENCODE_TIMEOUT_SECONDS` and `DAKSH_OPENCODE_MAX_OUTPUT_BYTES` to
 bound individual jobs and returned output. If OpenCode, Ollama, or the model
 is unavailable, submission returns a clear `503` setup error.
+
+### Telegram approval setup
+
+Create a bot with [@BotFather](https://t.me/BotFather), copy its token, start
+a private chat with the bot, and determine that chat's numeric ID. Set these
+values locally (never commit the token):
+
+```bash
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_ALLOWED_CHAT_ID=...
+```
+
+DAKSH sends requests only to that exact chat and processes updates only from
+it. Approvals are persisted in `DAKSH_DATA_DIR`, expire after
+`DAKSH_TELEGRAM_APPROVAL_EXPIRY_SECONDS` (15 minutes by default), and accept
+only the exact commands shown in the message: `APPROVE <approval-id>` or
+`DENY <approval-id>`. Telegram HTTP calls use the bounded
+`DAKSH_TELEGRAM_REQUEST_TIMEOUT_SECONDS` timeout. Missing configuration or a
+delivery failure causes submission to return an explicit `503`; the bot token
+is never logged. WhatsApp approval support is intentionally future/optional.
 
 Install and sign in to Tailscale on both devices before using the private
 iPhone-access instructions above. The laptop must remain powered on, connected

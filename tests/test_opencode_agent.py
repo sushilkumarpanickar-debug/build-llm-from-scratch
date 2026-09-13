@@ -73,7 +73,7 @@ class OpenCodeAgentTests(unittest.TestCase):
 
 class OpenCodeDashboardTests(unittest.TestCase):
     def setUp(self):
-        self.app = create_daksh_dashboard()
+        self.app = create_daksh_dashboard(start_telegram_polling=False)
         self.client = self.app.test_client()
 
     def test_rejects_invalid_job_submission(self):

@@ -20,7 +20,7 @@ class OpenCodeError(RuntimeError):
     """Raised when an OpenCode job cannot be safely started."""
 
 
-JobState = Literal["queued", "running", "completed", "failed", "timed_out"]
+JobState = Literal["pending_approval", "queued", "running", "completed", "failed", "timed_out", "denied"]
 MAX_PROMPT_LENGTH = 12_000
 
 
@@ -37,6 +37,7 @@ class OpenCodeJob:
     returncode: int | None = None
     output: str = ""
     error: str | None = None
+    approval_id: str | None = None
 
     def public(self) -> dict[str, object]:
         return {
@@ -48,6 +49,7 @@ class OpenCodeJob:
             "returncode": self.returncode,
             "output": self.output,
             "error": self.error,
+            "approval_id": self.approval_id,
         }
 
 
@@ -80,7 +82,13 @@ class OpenCodeAgent:
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="daksh-opencode")
 
     def submit(self, prompt: str) -> OpenCodeJob:
-        """Queue a prompt after validating local dependencies and input."""
+        """Queue a prompt immediately for backward-compatible direct callers."""
+        job = self.create_pending(prompt)
+        self.approve(job.id)
+        return job
+
+    def create_pending(self, prompt: str) -> OpenCodeJob:
+        """Create an approval-gated job without starting an OpenCode process."""
         if not isinstance(prompt, str):
             raise ValueError("Prompt must be a string.")
         prompt = prompt.strip()
@@ -89,11 +97,20 @@ class OpenCodeAgent:
         if len(prompt) > MAX_PROMPT_LENGTH:
             raise ValueError(f"Prompt exceeds the {MAX_PROMPT_LENGTH:,} character limit.")
         self._verify_dependencies()
-        job = OpenCodeJob(id=uuid.uuid4().hex, prompt=prompt)
+        job = OpenCodeJob(id=uuid.uuid4().hex, prompt=prompt, state="pending_approval")
         with self._lock:
             self._jobs[job.id] = job
-        self._executor.submit(self._run, job)
         return job
+
+    def approve(self, job_id: str) -> bool:
+        """Start a job exactly once after its approval service accepts it."""
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None or job.state != "pending_approval":
+                return False
+            job.state = "queued"
+        self._executor.submit(self._run, job)
+        return True
 
     def get(self, job_id: str) -> OpenCodeJob | None:
         with self._lock:

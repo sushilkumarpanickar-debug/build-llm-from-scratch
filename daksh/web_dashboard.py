@@ -9,11 +9,16 @@ from flask import Flask, jsonify, render_template, request
 from daksh.interface import DAKSH, DAKSHConfig, InteractionMode
 from scripts.setup import setup_llm_providers
 from config.settings import CLOUD_FALLBACK_ENABLED, DAKSH_WEB_HOST, DAKSH_WEB_PORT
-from config.settings import DAKSH_OPENCODE_MAX_OUTPUT_BYTES, DAKSH_OPENCODE_TIMEOUT_SECONDS
+from config.settings import (
+    DAKSH_DATA_DIR, DAKSH_OPENCODE_MAX_OUTPUT_BYTES, DAKSH_OPENCODE_TIMEOUT_SECONDS,
+    DAKSH_TELEGRAM_APPROVAL_EXPIRY_SECONDS, DAKSH_TELEGRAM_REQUEST_TIMEOUT_SECONDS,
+    TELEGRAM_ALLOWED_CHAT_ID, TELEGRAM_BOT_TOKEN,
+)
 from daksh.opencode_agent import OpenCodeAgent, OpenCodeError
+from daksh.telegram_approval import TelegramApprovalError, TelegramApprovalService
 
 
-def create_daksh_dashboard() -> Flask:
+def create_daksh_dashboard(*, start_telegram_polling: bool = True) -> Flask:
     """
     Create Flask app for DAKSH web dashboard.
     """
@@ -32,6 +37,16 @@ def create_daksh_dashboard() -> Flask:
         timeout_seconds=DAKSH_OPENCODE_TIMEOUT_SECONDS,
         max_output_bytes=DAKSH_OPENCODE_MAX_OUTPUT_BYTES,
     )
+    approvals = TelegramApprovalService(
+        bot_token=TELEGRAM_BOT_TOKEN,
+        allowed_chat_id=TELEGRAM_ALLOWED_CHAT_ID,
+        data_directory=DAKSH_DATA_DIR,
+        on_approved=opencode.approve,
+        expires_seconds=DAKSH_TELEGRAM_APPROVAL_EXPIRY_SECONDS,
+        request_timeout_seconds=DAKSH_TELEGRAM_REQUEST_TIMEOUT_SECONDS,
+    )
+    if start_telegram_polling:
+        approvals.start_polling()
 
     @app.after_request
     def harden_dashboard_response(response):
@@ -220,10 +235,12 @@ def create_daksh_dashboard() -> Flask:
             return jsonify({"error": "Expected a JSON object"}), 400
         prompt = data.get("prompt")
         try:
-            job = opencode.submit(prompt)
+            job = opencode.create_pending(prompt)
+            approval = approvals.request_approval(job.id, job.prompt)
+            job.approval_id = approval.id
         except ValueError as error:
             return jsonify({"error": str(error)}), 400
-        except OpenCodeError as error:
+        except (OpenCodeError, TelegramApprovalError) as error:
             return jsonify({"error": str(error)}), 503
         return jsonify(job.public()), 202
 
