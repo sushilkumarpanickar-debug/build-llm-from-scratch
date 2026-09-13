@@ -1,3 +1,11 @@
+# v0.6.0 - DAKSH AI Command Center
+
+- Redesigned the web dashboard and native client as responsive DAKSH AI command
+  centers with an original local-AI visual system.
+- Added live web status, memory, routing, agent, and task cards backed by the
+  local dashboard APIs.
+- Added browser dictation and optional speech playback to the web interface.
+
 # v0.5.0 - Native Voice Input
 
 - Added native push-to-talk transcription with Apple Speech Recognition.

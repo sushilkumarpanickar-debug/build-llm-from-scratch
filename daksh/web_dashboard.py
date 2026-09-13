@@ -8,7 +8,7 @@ from flask import Flask, jsonify, render_template, request
 
 from daksh.interface import DAKSH, DAKSHConfig, InteractionMode
 from scripts.setup import setup_llm_providers
-from config.settings import DAKSH_WEB_HOST, DAKSH_WEB_PORT
+from config.settings import CLOUD_FALLBACK_ENABLED, DAKSH_WEB_HOST, DAKSH_WEB_PORT
 
 
 def create_daksh_dashboard() -> Flask:
@@ -21,6 +21,31 @@ def create_daksh_dashboard() -> Flask:
         template_folder=str(project_root / "templates"),
         static_folder=str(project_root / "static"),
     )
+    # Dashboard traffic is intended for the configured local/Tailscale listener.
+    # Do not add permissive CORS headers: browsers from other origins cannot use
+    # the private control surface.
+    app.config["MAX_CONTENT_LENGTH"] = 32 * 1024
+
+    @app.after_request
+    def harden_dashboard_response(response):
+        """Keep the private dashboard from being embedded or MIME-sniffed."""
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "same-origin"
+        response.headers["Permissions-Policy"] = "microphone=(self)"
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self'; "
+            "manifest-src 'self'; "
+            "worker-src 'self'; "
+            "base-uri 'self'; "
+            "frame-ancestors 'none'"
+        )
+        return response
     
     # Initialize DAKSH
     daksh_config = DAKSHConfig(
@@ -42,7 +67,11 @@ def create_daksh_dashboard() -> Flask:
     @app.route('/api/daksh/status')
     def get_status():
         """Get DAKSH status."""
-        return jsonify(daksh.get_stats())
+        return jsonify({
+            **daksh.get_stats(),
+            "cloud_fallback_enabled": CLOUD_FALLBACK_ENABLED,
+            "local_listener": DAKSH_WEB_HOST,
+        })
     
     @app.route('/api/daksh/interact', methods=['POST'])
     def interact():
@@ -51,9 +80,14 @@ def create_daksh_dashboard() -> Flask:
         if not isinstance(data, dict):
             return jsonify({"error": "Expected a JSON object"}), 400
 
-        user_input = data.get('input', '').strip()
+        user_input = data.get('input', '')
         input_type = data.get('type', 'text')
 
+        if not isinstance(user_input, str):
+            return jsonify({"error": "Input must be a string"}), 400
+        if not isinstance(input_type, str):
+            return jsonify({"error": "Input type must be a string"}), 400
+        user_input = user_input.strip()
         if not user_input:
             return jsonify({"error": "Empty input"}), 400
         if len(user_input) > 10_000:
@@ -76,9 +110,12 @@ def create_daksh_dashboard() -> Flask:
     @app.route('/api/daksh/voice', methods=['POST'])
     def voice_input():
         """Handle voice input."""
-        # This would receive audio data and process it
-        data = request.json
-        audio_data = data.get('audio')
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+        audio_data = data.get("audio")
+        if audio_data is not None and not isinstance(audio_data, str):
+            return jsonify({"error": "Audio payload must be a string"}), 400
         
         # Process audio (simplified)
         if daksh.recognizer_available:
@@ -90,8 +127,17 @@ def create_daksh_dashboard() -> Flask:
     @app.route('/api/daksh/speak', methods=['POST'])
     def speak():
         """Generate speech output."""
-        data = request.json
-        text = data.get('text', '')
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+        text = data.get("text", "")
+        if not isinstance(text, str):
+            return jsonify({"error": "Text must be a string"}), 400
+        text = text.strip()
+        if not text:
+            return jsonify({"error": "Empty text"}), 400
+        if len(text) > 10_000:
+            return jsonify({"error": "Text exceeds the 10,000 character limit"}), 400
         
         if daksh.tts_available:
             daksh.speak(text, wait=False)
@@ -125,9 +171,21 @@ def create_daksh_dashboard() -> Flask:
     @app.route('/api/router/analyze', methods=['POST'])
     def analyze_routing():
         """Analyze routing decision for a query."""
-        data = request.json
-        query = data.get('query', '')
-        task_type = data.get('task_type', 'general')
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+        query = data.get("query", "")
+        task_type = data.get("task_type", "general")
+        if not isinstance(query, str) or not isinstance(task_type, str):
+            return jsonify({"error": "Query and task type must be strings"}), 400
+        query = query.strip()
+        task_type = task_type.strip().lower()
+        if not query:
+            return jsonify({"error": "Empty query"}), 400
+        if len(query) > 10_000:
+            return jsonify({"error": "Query exceeds the 10,000 character limit"}), 400
+        if task_type not in {"general", "reasoning", "coding", "web_search", "planning"}:
+            return jsonify({"error": "Unsupported task type"}), 400
         
         from llm_providers.router import LLMRequest
         llm_request = LLMRequest(
