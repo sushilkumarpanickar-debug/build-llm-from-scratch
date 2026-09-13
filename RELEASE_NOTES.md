@@ -1,3 +1,7 @@
+# v0.4.1 - Native Build Cleanup
+
+- Removed generated Swift Package build artifacts from the native app release.
+
 # v0.4.0 - Native DAKSH
 
 - Added a shared SwiftUI native client for macOS and iOS.
