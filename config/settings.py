@@ -76,6 +76,10 @@ DAKSH_DATA_DIR = Path(
     )
 ).expanduser()
 
+# OpenCode coding agent: local Ollama only, restricted to this repository.
+DAKSH_OPENCODE_TIMEOUT_SECONDS = int(os.getenv("DAKSH_OPENCODE_TIMEOUT_SECONDS", "300"))
+DAKSH_OPENCODE_MAX_OUTPUT_BYTES = int(os.getenv("DAKSH_OPENCODE_MAX_OUTPUT_BYTES", str(64 * 1024)))
+
 # ============================================================================
 # ORCHESTRATOR CONFIGURATION
 # ============================================================================

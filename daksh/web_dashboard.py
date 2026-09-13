@@ -9,6 +9,8 @@ from flask import Flask, jsonify, render_template, request
 from daksh.interface import DAKSH, DAKSHConfig, InteractionMode
 from scripts.setup import setup_llm_providers
 from config.settings import CLOUD_FALLBACK_ENABLED, DAKSH_WEB_HOST, DAKSH_WEB_PORT
+from config.settings import DAKSH_OPENCODE_MAX_OUTPUT_BYTES, DAKSH_OPENCODE_TIMEOUT_SECONDS
+from daksh.opencode_agent import OpenCodeAgent, OpenCodeError
 
 
 def create_daksh_dashboard() -> Flask:
@@ -25,6 +27,11 @@ def create_daksh_dashboard() -> Flask:
     # Do not add permissive CORS headers: browsers from other origins cannot use
     # the private control surface.
     app.config["MAX_CONTENT_LENGTH"] = 32 * 1024
+    opencode = OpenCodeAgent(
+        project_root,
+        timeout_seconds=DAKSH_OPENCODE_TIMEOUT_SECONDS,
+        max_output_bytes=DAKSH_OPENCODE_MAX_OUTPUT_BYTES,
+    )
 
     @app.after_request
     def harden_dashboard_response(response):
@@ -204,6 +211,31 @@ def create_daksh_dashboard() -> Flask:
             "estimated_time_ms": decision.estimated_time_ms,
             "fallback_providers": [p.value for p in (decision.fallback_providers or [])]
         })
+
+    @app.route('/api/opencode/jobs', methods=['POST'])
+    def submit_opencode_job():
+        """Submit an automatic, repository-restricted local coding job."""
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+        prompt = data.get("prompt")
+        try:
+            job = opencode.submit(prompt)
+        except ValueError as error:
+            return jsonify({"error": str(error)}), 400
+        except OpenCodeError as error:
+            return jsonify({"error": str(error)}), 503
+        return jsonify(job.public()), 202
+
+    @app.route('/api/opencode/jobs/<job_id>', methods=['GET'])
+    def get_opencode_job(job_id: str):
+        """Return bounded output and status for a submitted coding job."""
+        if len(job_id) != 32 or any(char not in "0123456789abcdef" for char in job_id):
+            return jsonify({"error": "Invalid job id"}), 400
+        job = opencode.get(job_id)
+        if job is None:
+            return jsonify({"error": "Job not found"}), 404
+        return jsonify(job.public())
     
     return app
 

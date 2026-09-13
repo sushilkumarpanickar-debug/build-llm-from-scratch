@@ -183,6 +183,38 @@ are never used. To evaluate cloud fallbacks temporarily, set it to `true`;
 set it back to `false` and remove cloud API keys for the final local-only
 configuration.
 
+## Local OpenCode Coding Agent
+
+DAKSH can queue noninteractive coding jobs from the local dashboard at
+`POST /api/opencode/jobs` with `{"prompt": "..."}` and retrieve the bounded
+result at `GET /api/opencode/jobs/<id>`. Jobs are automatic **only** in this
+DAKSH repository; the wrapper rejects every other workspace.
+
+Install the required local tools on macOS, then start Ollama and pull the
+fixed model:
+
+```bash
+brew install anomalyco/tap/opencode
+brew install --cask ollama
+ollama pull qwen2.5:3b
+```
+
+The wrapper invokes:
+
+```bash
+opencode run --model ollama/qwen2.5:3b --format json -- "your prompt"
+```
+
+It supplies OpenCode configuration that enables only the local Ollama provider
+at `http://localhost:11434/v1`, disables project configuration and sharing,
+allows read/edit/bash only in the repository, and denies
+`external_directory`, web fetch, and web search. It never sends cloud-provider
+credentials to the process. The dashboard emits no CORS headers and its
+existing CSP permits connections only to the same origin. Set
+`DAKSH_OPENCODE_TIMEOUT_SECONDS` and `DAKSH_OPENCODE_MAX_OUTPUT_BYTES` to
+bound individual jobs and returned output. If OpenCode, Ollama, or the model
+is unavailable, submission returns a clear `503` setup error.
+
 Install and sign in to Tailscale on both devices before using the private
 iPhone-access instructions above. The laptop must remain powered on, connected
 to the Internet, and running both Ollama and DAKSH.

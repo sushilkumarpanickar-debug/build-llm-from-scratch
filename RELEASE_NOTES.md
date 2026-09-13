@@ -1,3 +1,10 @@
+# v0.8.0 - Local OpenCode Development
+
+- Added OpenCode as a pinned upstream submodule.
+- Added a local Ollama-only coding-agent runner with repository-root
+  enforcement, external-directory denial, and bounded job execution.
+- Added secure DAKSH APIs for submitting and monitoring development jobs.
+
 # v0.7.0 - Installable Native Apps
 
 - Added source-controlled Xcode targets for native iOS and macOS DAKSH AI apps.
