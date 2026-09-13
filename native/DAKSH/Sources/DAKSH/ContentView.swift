@@ -12,7 +12,7 @@ struct ContentView: View {
     @StateObject private var viewModel = ChatViewModel()
     @State private var isShowingSettings = false
     @State private var isShowingMemory = false
-    @State private var section: AppSection? = .chat
+    @State private var section: AppSection? = .commandCenter
 
     var body: some View {
         NavigationSplitView {
@@ -69,7 +69,9 @@ struct ContentView: View {
     }
 
     @ViewBuilder private var detailView: some View {
-        switch section ?? .chat {
+        switch section ?? .commandCenter {
+        case .commandCenter:
+            WebCommandCenterView()
         case .chat:
             CommandCenter(viewModel: viewModel, showSettings: $isShowingSettings, showMemory: $isShowingMemory)
         case .memory:
@@ -85,6 +87,7 @@ struct ContentView: View {
 }
 
 private enum AppSection: String, CaseIterable, Hashable {
+    case commandCenter = "Command Center"
     case chat = "Chat"
     case memory = "Memory"
     case documents = "Documents"
@@ -93,6 +96,7 @@ private enum AppSection: String, CaseIterable, Hashable {
 
     var icon: String {
         switch self {
+        case .commandCenter: "sparkles.tv.fill"
         case .chat: "bubble.left.and.bubble.right.fill"
         case .memory: "brain.head.profile.fill"
         case .documents: "folder.fill"

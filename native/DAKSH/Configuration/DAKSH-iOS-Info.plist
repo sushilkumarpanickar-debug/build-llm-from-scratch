@@ -26,6 +26,13 @@
 	<string>DAKSH AI uses the microphone for push-to-talk requests.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>DAKSH AI transcribes push-to-talk requests on your device.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>DAKSH AI connects to your DAKSH server running on your Mac over your local network or Tailscale.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
 </dict>

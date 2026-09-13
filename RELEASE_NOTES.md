@@ -1,3 +1,24 @@
+# v0.16.0 - Command Center Web UI + Local Workspace Backend
+
+- Brought in the more advanced JARVIS-style command center UI (holographic
+  core, live voice card, Agents/Tasks/Finance/Knowledge Base/Workflows
+  sidebar) as `local_workspace/` — a FastAPI backend + static UI that runs
+  alongside the existing Flask dashboard.
+- Fixed a Python 3.9 runtime incompatibility (`int | None` typed parameter)
+  in `local_workspace/server.py` so it runs correctly on macOS's stock
+  system Python, not only newer interpreters.
+- Added `WebCommandCenterView` to the native macOS/iPhone app: a WKWebView
+  wrapper that loads this richer command center as the app's new default
+  landing section, with a reload control and an editable server-address
+  sheet, while keeping the existing native Chat/Memory/Documents/Skills/
+  System workspaces reachable from the sidebar.
+- Added the same App Transport Security local-networking allowance and a new
+  `NSLocalNetworkUsageDescription` to the iOS target's Info.plist so an
+  iPhone can reach a Mac-hosted DAKSH server, mirroring the earlier macOS fix.
+- Verified end-to-end via the local_workspace server's access log: the
+  rebuilt native macOS app's WebView successfully requested `/`, `/app.js`,
+  `/style.css`, and live `/api/state`/`/api/health` data.
+
 # v0.15.1 - Native Local Connection Repair
 
 - Added the macOS App Transport Security local-network allowance required for
