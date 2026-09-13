@@ -1,3 +1,9 @@
+# v0.10.0 - Local Mac Connection
+
+- Connected the macOS native app to the local DAKSH service automatically.
+- Permitted HTTP only for loopback addresses on macOS while retaining HTTPS
+  enforcement for remote and iPhone connections.
+
 # v0.9.0 - Telegram Approval Gate
 
 - Added Telegram approvals for OpenCode development jobs, bound to a single

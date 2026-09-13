@@ -29,7 +29,9 @@ struct APIClient: Sendable {
         guard let url = URL(string: trimmed), let host = url.host else {
             throw APIClientError.invalidBaseURL
         }
-        guard url.scheme?.lowercased() == "https" else {
+        let scheme = url.scheme?.lowercased()
+        let localHosts = ["localhost", "127.0.0.1", "::1"]
+        guard scheme == "https" || (scheme == "http" && localHosts.contains(host.lowercased())) else {
             throw APIClientError.insecureURL
         }
         guard !host.isEmpty else {

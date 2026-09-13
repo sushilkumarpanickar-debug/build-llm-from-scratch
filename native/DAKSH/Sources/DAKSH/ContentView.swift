@@ -17,6 +17,11 @@ struct ContentView: View {
             CommandCenter(viewModel: viewModel, showSettings: $isShowingSettings)
         }
         .task {
+            #if os(macOS)
+            if tailnetBaseURL.isEmpty {
+                tailnetBaseURL = "http://127.0.0.1:9000"
+            }
+            #endif
             viewModel.configure(baseURLString: tailnetBaseURL)
             await viewModel.loadHistory()
         }
@@ -345,7 +350,7 @@ private struct SettingsView: View {
                         .textInputAutocapitalization(.never).keyboardType(.URL)
                         #endif
                         .autocorrectionDisabled()
-                    Text("Use the HTTPS URL supplied by Tailscale Serve. No API keys are stored in this app.")
+                    Text("On this Mac, use http://127.0.0.1:9000. On iPhone, use the HTTPS URL supplied by Tailscale Serve. No API keys are stored in this app.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
             }

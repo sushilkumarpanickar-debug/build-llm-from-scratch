@@ -15,6 +15,12 @@ final class APIClientTests: XCTestCase {
         }
     }
 
+    func testAcceptsLocalhostHTTPForTheMacApp() throws {
+        let client = try APIClient(baseURLString: "http://127.0.0.1:9000")
+
+        XCTAssertEqual(client.baseURL.host, "127.0.0.1")
+    }
+
     func testRejectsMalformedBaseURL() {
         XCTAssertThrowsError(try APIClient(baseURLString: "not a url")) { error in
             XCTAssertEqual(error as? APIClientError, .invalidBaseURL)
