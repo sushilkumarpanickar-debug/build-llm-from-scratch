@@ -33,7 +33,12 @@ struct ContentView: View {
             )
         } detail: {
             detailView
+                #if os(macOS)
+                .frame(minWidth: 760, minHeight: 620)
+                #endif
         }
+        .navigationSplitViewStyle(.balanced)
+        .preferredColorScheme(.dark)
         .task {
             #if os(macOS)
             if tailnetBaseURL.isEmpty {

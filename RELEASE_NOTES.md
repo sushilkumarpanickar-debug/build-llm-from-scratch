@@ -1,3 +1,10 @@
+# v0.14.2 - Native Dashboard Layout
+
+- Made the DAKSH native app open as a dark, balanced, desktop-sized workspace
+  rather than inheriting a small or sparse previous window layout.
+- Preserved responsive navigation while ensuring the Chat, Memory, Documents,
+  Skills, and System surfaces have a usable minimum presentation.
+
 # v0.14.1 - Installed Native App and Icon Fix
 
 - Corrected the macOS target resource phase so the DAKSH icon is included in

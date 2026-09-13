@@ -7,6 +7,7 @@ struct DAKSHApp: App {
             ContentView()
         }
         #if os(macOS)
+        .defaultSize(width: 1280, height: 820)
         .windowResizability(.contentMinSize)
         #endif
     }
