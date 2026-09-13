@@ -1,3 +1,19 @@
+# DAKSH · SNNS Local Intelligence
+
+The working Phase 1 application is a private JARVIS-style second brain for macOS. It uses free local models through Ollama, local faster-whisper voice input, macOS speech, persistent SQLite memory, and semantic document learning for PDF, TXT, Markdown, DOCX, CSV, and XLSX.
+
+```sh
+./setup_mac.sh
+ollama pull nomic-embed-text
+.venv/bin/python -m local_workspace.server
+```
+
+Open <http://127.0.0.1:9001>. See [local_workspace/README.md](local_workspace/README.md) for the complete Phase 1 guide. The repository does not require a paid AI API.
+
+## Legacy orchestration research
+
+The older modules below are preserved as research inputs for later orchestrator phases. Some of their original architectural descriptions are aspirational and are not exposed as working Phase 1 capabilities.
+
 # LLM Orchestrator: Three-Tier Hierarchical System
 
 A sophisticated Large Language Model orchestration framework featuring:

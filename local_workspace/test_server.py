@@ -1,74 +1,117 @@
-import importlib.util
-import json
-from pathlib import Path
 import tempfile
-import threading
 import unittest
+from pathlib import Path
 from unittest.mock import patch
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError
 
-spec = importlib.util.spec_from_file_location('workspace',Path(__file__).with_name('server.py'))
-app = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(app)
+from fastapi.testclient import TestClient
+
+from local_workspace import ingestion
+from local_workspace.server import TOKEN, create_app
+
 
 class WorkspaceTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        app.DB = Path(self.temp.name)/'workspace.sqlite3'
-        app.initialize()
-        self.server = app.ThreadingHTTPServer(('127.0.0.1',0),app.Handler)
-        self.thread = threading.Thread(target=self.server.serve_forever,daemon=True)
-        self.thread.start()
-        self.base = 'http://127.0.0.1:'+str(self.server.server_port)
-        self.mock = patch.object(app,'ollama',side_effect=lambda path,body=None: {'models':[{'name':'test-local'}]} if path=='tags' else {'message':{'content':'1. Review source notes.\n2. Prepare a draft.'}})
-        self.mock.start()
-    def tearDown(self):
-        self.server.shutdown()
-        self.server.server_close()
-        self.mock.stop()
-        self.temp.cleanup()
-    def request(self,path,data=None,token=app.TOKEN,host=None):
-        headers={'Content-Type':'application/json','X-Workspace-Token':token}
-        if host: headers['Host']=host
-        req=Request(self.base+path,data=json.dumps(data).encode() if data is not None else None,headers=headers)
-        try:
-            with urlopen(req) as r: return r.status,json.load(r)
-        except HTTPError as e: return e.code,json.load(e)
-    def test_notes_persist_and_are_scoped(self):
-        self.assertEqual(self.request('/api/notes',{'scope':'Personal','title':'Preference','content':'Prefer concise reports','source':'User'})[0],201)
-        app.initialize()
-        self.assertEqual(len(self.request('/api/state?scope=Personal')[1]['notes']),1)
-        self.assertEqual(self.request('/api/state?scope=SNNS%20Smartact')[1]['notes'],[])
-        self.assertEqual(len(app.retrieve('Personal','concise reports')),1)
-        self.assertEqual(app.retrieve('SNNS Smartact','concise reports'),[])
-    def test_branded_interface_assets_are_served(self):
-        with urlopen(self.base + '/') as response:
-            page = response.read().decode()
-            self.assertIn('SNNS INTELLIGENCE', page)
-            self.assertIn('/snns_logo.png', page)
-        with urlopen(self.base + '/snns_logo.png') as response:
-            self.assertEqual(response.headers.get_content_type(), 'image/png')
-            self.assertEqual(response.read(8), b'\x89PNG\r\n\x1a\n')
-    def test_write_and_host_protection(self):
-        self.assertEqual(self.request('/api/notes',{},token='wrong')[0],403)
-        self.assertEqual(self.request('/api/state',host='evil.example')[0],403)
-        self.assertEqual(self.request('/api/notes',{'scope':'unknown'})[0],400)
-        self.assertEqual(self.request('/api/notes',[])[0],400)
-    def test_chat_and_task_lifecycle(self):
-        self.assertEqual(self.request('/api/chat',{'prompt':'Hello','model':'test-local'})[0],200)
-        self.assertEqual(len(self.request('/api/state')[1]['messages']),2)
-        self.assertEqual(self.request('/api/tasks',{'prompt':'Plan a report','model':'test-local'})[0],200)
-        task=self.request('/api/state')[1]['tasks'][0]
-        self.assertEqual(task['status'],'planned')
-        self.assertEqual(self.request('/api/tasks/status',{'scope':'SNNS Smartact','id':task['id'],'status':'completed'})[0],404)
-        self.assertEqual(self.request('/api/tasks/status',{'id':task['id'],'status':'completed'})[0],200)
-    def test_model_failure_not_saved_as_success(self):
-        with patch.object(app,'ollama',side_effect=OSError('Unavailable')):
-            self.assertEqual(self.request('/api/chat',{'prompt':'Hello','model':'test-local'})[0],503)
-        self.assertEqual(self.request('/api/state')[1]['messages'],[])
-    def test_cloud_model_excluded(self):
-        with patch.object(app,'ollama',return_value={'models':[{'name':'test-cloud'},{'name':'remote','remote_host':'example.com'},{'name':'local'}]}):
-            self.assertEqual(app.models(),['local'])
+        self.app = create_app(Path(self.temp.name))
+        self.client = TestClient(self.app, base_url="http://127.0.0.1")
+        self.headers = {"X-Workspace-Token": TOKEN}
+        self.models_patch = patch("local_workspace.server.ollama_client.models", return_value=["qwen-test", "nomic-embed-text:latest"])
+        self.chat_models_patch = patch("local_workspace.server.ollama_client.chat_models", return_value=["qwen-test"])
+        self.models_patch.start()
+        self.chat_models_patch.start()
 
-if __name__=='__main__':unittest.main()
+    def tearDown(self):
+        self.client.close()
+        self.models_patch.stop()
+        self.chat_models_patch.stop()
+        self.temp.cleanup()
+
+    def post(self, path, data):
+        return self.client.post(path, json=data, headers=self.headers)
+
+    def test_assets_health_and_host_protection(self):
+        page = self.client.get("/")
+        self.assertEqual(page.status_code, 200)
+        self.assertIn("SECOND BRAIN MAP", page.text)
+        self.assertEqual(self.client.get("/snns_logo.png").content[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertTrue(self.client.get("/api/health").json()["local_only"])
+        self.assertEqual(self.client.get("/api/state", headers={"Host": "evil.example"}).status_code, 403)
+
+    def test_memory_is_explicit_categorized_and_scoped(self):
+        response = self.post("/api/memories", {
+            "scope": "Personal", "title": "Output style", "content": "Prefer concise reports",
+            "source": "User", "category": "preferences",
+        })
+        self.assertEqual(response.status_code, 200)
+        personal = self.client.get("/api/state?scope=Personal").json()
+        snns = self.client.get("/api/state?scope=SNNS%20Smartact").json()
+        self.assertEqual(personal["notes"][0]["category"], "preferences")
+        self.assertEqual(snns["notes"], [])
+        blocked = self.post("/api/memories", {
+            "title": "Secret", "content": "My OTP is 123456", "source": "User", "category": "preferences"
+        })
+        self.assertEqual(blocked.status_code, 400)
+
+    def test_conversations_and_explicit_remember(self):
+        created = self.post("/api/conversations", {"title": "Planning"}).json()
+        response = self.post("/api/chat", {
+            "prompt": "Remember that board reports should be concise", "conversation_id": created["id"], "model": "qwen-test"
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Saved as", response.json()["response"])
+        state = self.client.get(f"/api/state?conversation_id={created['id']}").json()
+        self.assertEqual(len(state["messages"]), 2)
+        self.assertEqual(len(state["notes"]), 1)
+        deleted = self.client.delete(f"/api/conversations/{created['id']}?scope=Personal", headers=self.headers)
+        self.assertEqual(deleted.status_code, 200)
+
+    def test_document_index_and_semantic_retrieval(self):
+        def fake_embed(texts, _model="nomic-embed-text"):
+            values = [texts] if isinstance(texts, str) else texts
+            return [[1.0, float("dispatch" in value.lower())] for value in values]
+
+        with patch("local_workspace.ingestion.ollama_client.embed", side_effect=fake_embed):
+            response = self.client.post(
+                "/api/documents", headers=self.headers, data={"scope": "Personal"},
+                files={"file": ("operations.txt", b"Coal dispatch target is 12000 tonnes this week.", "text/plain")},
+            )
+            self.assertEqual(response.status_code, 200, response.text)
+            document = response.json()["document"]
+            self.assertEqual(document["chunk_count"], 1)
+            results = ingestion.retrieve(self.app.state.store, "Personal", "dispatch", limit=1)
+            self.assertEqual(results[0]["filename"], "operations.txt")
+
+    def test_grounded_chat_persists_sources(self):
+        store = self.app.state.store
+        document_id, _ = store.execute(
+            "INSERT INTO documents(scope,filename,stored_name,sha256,kind,status,chunk_count,created) VALUES(?,?,?,?,?,'ready',1,?)",
+            ("Personal", "facts.txt", "facts.txt", "sha", "txt", "2026-09-13T00:00:00+00:00"),
+        )
+        store.execute(
+            "INSERT INTO chunks(document_id,scope,content,metadata,embedding) VALUES(?,?,?,?,?)",
+            (document_id, "Personal", "The answer is 42.", '{"filename":"facts.txt","location":"document","chunk":1}', "[1.0,0.0]"),
+        )
+        conversation = self.client.get("/api/state").json()["conversation"]
+        with patch("local_workspace.server.ingestion.retrieve", return_value=[{
+            "id":1,"document_id":document_id,"content":"The answer is 42.","filename":"facts.txt",
+            "location":"document","chunk":1,"score":0.9,
+        }]), patch("local_workspace.server.ollama_client.chat", return_value="It is 42. [Source: facts.txt — document]"):
+            response = self.post("/api/chat", {"prompt":"What is the answer?","model":"qwen-test","conversation_id":conversation["id"]})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["sources"][0]["title"], "facts.txt")
+        messages = self.client.get(f"/api/state?conversation_id={conversation['id']}").json()["messages"]
+        self.assertEqual(messages[-1]["sources"][0]["title"], "facts.txt")
+
+    def test_settings_task_and_write_token(self):
+        self.assertEqual(self.client.post("/api/settings", json={"model":"qwen-test"}).status_code, 403)
+        saved = self.post("/api/settings", {"model":"qwen-test","stt_model":"tiny","speech_enabled":"true"})
+        self.assertEqual(saved.status_code, 200)
+        with patch("local_workspace.server.ollama_client.chat", return_value="1. Inspect\n2. Deliver"):
+            task = self.post("/api/tasks", {"prompt":"Plan the report","model":"qwen-test"})
+        self.assertEqual(task.status_code, 200)
+        status = self.post("/api/tasks/status", {"id":task.json()["id"],"status":"completed"})
+        self.assertEqual(status.status_code, 200)
+
+
+if __name__ == "__main__":
+    unittest.main()

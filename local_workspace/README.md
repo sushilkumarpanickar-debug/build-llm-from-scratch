@@ -1,40 +1,55 @@
-# DAKSH private workspace
+# DAKSH Phase 1 local workspace
 
-A local working interface for the second-brain project. Uses Python's standard library and a locally installed Ollama model; no Python packages are required for this entry point.
+DAKSH is a private second brain that runs on this Mac. Its JARVIS-style command centre uses the SNNS identity while every AI operation stays local: Qwen through Ollama, `nomic-embed-text` for document retrieval, `faster-whisper` for microphone transcription, macOS `say` for spoken replies, and SQLite for durable memory.
 
-## Start on your Mac
-
-From the repository root:
+## One-time setup
 
 ```sh
-python3 local_workspace/server.py
+./setup_mac.sh
+ollama pull qwen3:8b
+ollama pull nomic-embed-text
 ```
 
-Open http://127.0.0.1:9001. Keep the terminal running. Ollama must be running with a downloaded local model for conversation and task planning. The UI discovers available models; it does not download models automatically. Notes work without a model. Use `--port 9003` if the default port is occupied.
+`qwen3:8b` is the preferred model. DAKSH automatically falls back to another installed local chat model, including `qwen2.5:3b` on smaller Macs. The setup script never configures a paid API.
 
-## Implemented
+## Start
 
-- Responsive JARVIS-inspired command-centre interface using the supplied SNNS peacock identity, without external visual assets.
-- Conversation, memory vault, mission control and systems matrix views.
-- Persistent notes with title, source and creation date.
-- Separate Personal, CA Professional, Tiwarta CFO and SNNS Smartact context.
-- Local model responses with recent conversation context and keyword-matched notes.
-- Model-generated task plans with user-managed status.
-- Explicit readiness states, bounded requests, loopback binding and same-origin write token.
-- No external scripts, fonts, analytics, cloud APIs or browser-storage copies of notes.
+```sh
+.venv/bin/python -m local_workspace.server
+```
 
-Data lives in `local_workspace/data/workspace.sqlite3`, excluded from Git. Back up that directory separately. The database is not encrypted by this application. Workspace separation is organisational, not authentication. This is a single-user, loopback-only development application, not a remotely deployable server.
+Open <http://127.0.0.1:9001>. The server deliberately binds only to the loopback interface. Use `--port 9003` if port 9001 is occupied.
 
-## Boundaries
+## Phase 1 abilities
 
-The legacy `daksh.web_dashboard` imports an absent `orchestrator.manager` module. This entry point is deliberately independent so that the new workspace runs without claiming the legacy orchestrator has been repaired. Existing source is preserved.
+- Separate Personal, CA Professional, Tiwarta CFO, and SNNS Smartact domains.
+- Multiple persistent conversations with local Qwen chat.
+- Explicit categorized memory and “remember that…” capture.
+- Local semantic RAG over PDF, TXT, Markdown, DOCX, CSV, and XLSX files.
+- Source chips and filename/page/sheet citations in retrieved answers.
+- Browser push-to-talk input transcribed locally with faster-whisper.
+- Optional spoken assistant replies through macOS `say`.
+- Local mission planning and status tracking.
+- Live health matrix for inference, embeddings, voice, speech, database, and network boundary.
 
-Task plans do not execute tools. Status changes are manual. There is no background scheduling, native voice capture, file parsing, OAuth, semantic vector search, autonomous agent execution or cloud provider connection yet. Notes use keyword-overlap retrieval, not semantic RAG. Responses are non-streaming and limited to 700 output tokens; at most one generation runs at once. The UI displays the most recent 200 records of each kind per scope; older records remain stored. A request may take up to two minutes on a slower model.
+Runtime data is saved under `local_workspace/data/` and excluded from Git. The SQLite database is not encrypted; rely on macOS account and disk encryption for device-level protection. Domain separation is contextual inside a single-user application, not user authentication.
+
+## Document learning
+
+Upload a file from **Knowledge files**. DAKSH extracts page or sheet text, splits it into overlapping chunks, creates embeddings through local Ollama, and saves the vectors in SQLite. Chat retrieves the most relevant chunks from the active domain and exposes their sources with the answer. This teaches DAKSH your material without retraining or changing the base model.
+
+## Voice
+
+The first microphone transcription downloads the selected open Whisper model to the local Hugging Face cache. `tiny` is the default for speed. Browser microphone permission is required. Spoken replies are disabled until enabled in **Systems matrix**.
 
 ## Validation
 
 ```sh
-python3 local_workspace/test_server.py
+.venv/bin/python -m unittest local_workspace.test_server
 ```
 
-Tests cover branded asset delivery, persistence, workspace isolation, write/host protection, chat/task lifecycle, unavailable providers and cloud-model exclusion. Live local-model tests use synthetic data in a temporary database. No personal source material is committed.
+Tests use temporary databases and mocked model output. Live validation additionally checks the installed Ollama chat model, embeddings, one document-grounded answer, a faster-whisper transcription, and the macOS speech command.
+
+## Safety boundary
+
+Document content is treated as untrusted reference data. DAKSH does not expose arbitrary shell execution or desktop automation. It refuses to persist common secret types as memory. Destructive conversation and document removal actions require an in-app confirmation and are written to the local audit log.

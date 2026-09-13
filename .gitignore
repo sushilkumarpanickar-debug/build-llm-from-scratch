@@ -5,6 +5,8 @@ __pycache__/
 *.pyc
 .venv/
 local_workspace/data/
+local_workspace/models/
+local_workspace/tmp/
 *.sqlite3
 *.sqlite3-*
 .DS_Store
