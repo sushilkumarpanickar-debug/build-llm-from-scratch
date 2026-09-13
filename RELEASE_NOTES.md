@@ -1,3 +1,10 @@
+# v0.5.0 - Native Voice Input
+
+- Added native push-to-talk transcription with Apple Speech Recognition.
+- Added explicit microphone and speech-recognition permission handling.
+- Kept voice requests local to the device until the user reviews and sends the
+  recognized text to the private DAKSH service.
+
 # v0.4.1 - Native Build Cleanup
 
 - Removed generated Swift Package build artifacts from the native app release.

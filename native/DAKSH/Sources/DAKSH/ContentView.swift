@@ -28,6 +28,7 @@ private struct ChatView: View {
     @Binding var showSettings: Bool
     @State private var draft = ""
     @State private var showClearConfirmation = false
+    @StateObject private var voiceInput = VoiceInputController()
 
     var body: some View {
         NavigationStack {
@@ -35,6 +36,11 @@ private struct ChatView: View {
                 if let error = viewModel.errorMessage {
                     ErrorBanner(message: error) {
                         viewModel.errorMessage = nil
+                    }
+                    if let error = voiceInput.errorMessage {
+                        ErrorBanner(message: error) {
+                            voiceInput.errorMessage = nil
+                        }
                     }
                 }
 
@@ -68,7 +74,11 @@ private struct ChatView: View {
                 }
 
                 Divider()
-                Composer(draft: $draft, isSending: viewModel.isSending) {
+                Composer(
+                    draft: $draft,
+                    isSending: viewModel.isSending,
+                    voiceInput: voiceInput
+                ) {
                     let message = draft
                     draft = ""
                     Task { await viewModel.send(message) }
@@ -162,6 +172,7 @@ private struct MessageBubble: View {
 private struct Composer: View {
     @Binding var draft: String
     let isSending: Bool
+    @ObservedObject var voiceInput: VoiceInputController
     let send: () -> Void
 
     var body: some View {
@@ -171,6 +182,19 @@ private struct Composer: View {
                 .textFieldStyle(.roundedBorder)
                 .submitLabel(.send)
                 .onSubmit(send)
+                .onChange(of: voiceInput.transcript) { _, transcript in
+                    draft = transcript
+                }
+
+            Button {
+                voiceInput.toggle()
+            } label: {
+                Image(systemName: voiceInput.isListening ? "stop.circle.fill" : "mic.circle.fill")
+                    .font(.title2)
+            }
+            .tint(voiceInput.isListening ? .red : .accentColor)
+            .disabled(isSending)
+            .accessibilityLabel(voiceInput.isListening ? "Stop listening" : "Start voice input")
 
             Button(action: send) {
                 Image(systemName: "arrow.up.circle.fill")

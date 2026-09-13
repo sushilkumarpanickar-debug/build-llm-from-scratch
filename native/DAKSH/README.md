@@ -8,6 +8,24 @@ This is a single SwiftUI source tree for **iOS 17+** and **macOS 14+**. It conne
 2. Select either a macOS destination or an iOS simulator/device and run.
 3. Open **Endpoint Settings** (gear button) and enter the dashboard origin, for example `https://daksh.your-tailnet.ts.net`. The value is persisted locally using `@AppStorage`.
 
+## Voice input
+
+The microphone button uses Apple Speech Recognition and the device microphone
+for push-to-talk transcription. Before running on a physical iPhone or Mac,
+add these privacy usage descriptions to the app target's `Info.plist` in
+Xcode:
+
+```xml
+<key>NSMicrophoneUsageDescription</key>
+<string>DAKSH uses the microphone for push-to-talk requests.</string>
+<key>NSSpeechRecognitionUsageDescription</key>
+<string>DAKSH transcribes push-to-talk requests on your device.</string>
+```
+
+Tap the microphone button to begin speaking and tap it again to stop. The
+recognized text appears in the composer; review it and press Send to submit it
+to the private DAKSH server.
+
 The client uses these existing server routes:
 
 - `GET /api/daksh/history?limit=50`
