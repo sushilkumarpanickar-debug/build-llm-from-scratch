@@ -9,7 +9,7 @@
 <body>
   <div class="scan-grid" aria-hidden="true"></div>
   <aside class="left-rail">
-    <a class="brand" href="/"><span class="brand-core"><img src="/snns_logo.png" alt=""></span><span>DAKSH<small>COMMAND CENTER</small></span></a>
+    <a class="brand" href="/"><span class="brand-core" aria-hidden="true"><i></i><b>D</b></span><span>DAKSH<small>AN SNNS INTELLIGENCE</small></span></a>
     <nav aria-label="Main navigation">
       <button data-view="dashboard" class="active"><i>⌘</i>Command Center</button>
       <button data-view="dashboard"><i>◉</i>AI Core</button>
@@ -54,9 +54,19 @@
         </article>
 
         <article class="hud-card ai-core-hero">
-          <div class="star-field" aria-hidden="true"></div><div class="orbit-line orbit-one"></div><div class="orbit-line orbit-two"></div>
-          <div class="holo-sphere"><span class="latitude l1"></span><span class="latitude l2"></span><span class="longitude"></span><div class="sphere-glow"></div><img src="/snns_logo.png" alt="SNNS intelligence core"></div>
-          <div class="core-title"><strong>DAKSH</strong><span>AI CORE</span><small>PHASE 1 · LOCAL</small></div>
+          <div class="star-field" aria-hidden="true"></div><div class="core-horizon"></div>
+          <div class="reactor-assembly" aria-label="DAKSH holographic intelligence core">
+            <i class="reactor-ring ring-a"></i><i class="reactor-ring ring-b"></i><i class="reactor-ring ring-c"></i><i class="reactor-scan"></i>
+            <svg class="daksh-avatar" viewBox="0 0 180 210" role="img" aria-label="DAKSH holographic avatar">
+              <path class="avatar-shell" d="M90 10 137 31 155 73 146 139 119 183 90 202 61 183 34 139 25 73 43 31Z"/>
+              <path class="avatar-panel" d="M90 21 124 38 139 73 127 91 111 76 90 82 69 76 53 91 41 73 56 38Z"/>
+              <path class="avatar-jaw" d="m43 105 25 13 22-8 22 8 25-13-8 40-22 32H73l-22-32Z"/>
+              <path class="avatar-eye" d="m49 82 31 5-10 13-24-7Zm82 0-31 5 10 13 24-7Z"/>
+              <path class="avatar-circuit" d="M90 23v50M58 43l18 27M122 43l-18 27M49 121l20 8 8 34m54-42-20 8-8 34M72 177l18-22 18 22"/>
+              <circle class="avatar-core" cx="90" cy="131" r="13"/><circle class="avatar-core-inner" cx="90" cy="131" r="5"/>
+            </svg>
+          </div>
+          <div class="core-title"><strong>DAKSH</strong><span>COGNITIVE CORE</span><small>LISTENING · LEARNING · ORCHESTRATING</small></div>
         </article>
 
         <article class="hud-card live-feed">
@@ -126,7 +136,26 @@
       <article class="hud-card connector-panel"><div class="card-head"><span>MCP &amp; CONNECTOR CONTROL PLANE</span><b>NO AUTO-INSTALL</b></div><div id="integrations" class="connector-grid"></div></article>
     </section>
 
-    <footer class="command-dock"><div><span>⌖</span><small>Location<strong>Local Mac</strong></small></div><div><span>◌</span><small>Privacy<strong>Private</strong></small></div><div><span>⌁</span><small>Network<strong>Loopback</strong></small></div><i></i><button id="dock-mic"><b>◉</b><span>TALK TO DAKSH<small id="dock-status">Tap to speak</small></span></button><i></i><button data-view="chat" class="briefing">▷ Executive Briefing</button></footer>
+    <footer class="command-dock"><div><span>⌖</span><small>Location<strong>Local Mac</strong></small></div><div><span>◌</span><small>Privacy<strong>Private</strong></small></div><div><span>⌁</span><small>Network<strong>Loopback</strong></small></div><i></i><button id="dock-mic"><b>◉</b><span>START VOICE SESSION<small id="dock-status">Continuous conversation</small></span></button><i></i><button data-view="chat" class="briefing">▷ Executive Briefing</button></footer>
   </main>
+
+  <section id="voice-mode" class="voice-mode" hidden data-state="idle" aria-label="DAKSH voice conversation">
+    <div class="voice-grid" aria-hidden="true"></div>
+    <header><div><span class="live-dot"></span><strong>DAKSH VOICE LINK</strong><small>PRIVATE · ON-DEVICE TRANSCRIPTION</small></div><button id="voice-close">END SESSION ×</button></header>
+    <div class="voice-telemetry left"><span>ACTIVE DOMAIN<b id="voice-domain">PERSONAL</b></span><span>LOCAL MODEL<b id="voice-model">—</b></span><span>MEMORY LINK<b id="voice-memory">0 RECORDS</b></span></div>
+    <div class="voice-presence">
+      <div class="voice-reactor">
+        <i class="voice-ring vr-one"></i><i class="voice-ring vr-two"></i><i class="voice-ring vr-three"></i><i class="voice-sweep"></i>
+        <svg class="daksh-avatar voice-avatar" viewBox="0 0 180 210" aria-hidden="true">
+          <path class="avatar-shell" d="M90 10 137 31 155 73 146 139 119 183 90 202 61 183 34 139 25 73 43 31Z"/><path class="avatar-panel" d="M90 21 124 38 139 73 127 91 111 76 90 82 69 76 53 91 41 73 56 38Z"/><path class="avatar-jaw" d="m43 105 25 13 22-8 22 8 25-13-8 40-22 32H73l-22-32Z"/><path class="avatar-eye" d="m49 82 31 5-10 13-24-7Zm82 0-31 5 10 13 24-7Z"/><path class="avatar-circuit" d="M90 23v50M58 43l18 27M122 43l-18 27M49 121l20 8 8 34m54-42-20 8-8 34M72 177l18-22 18 22"/><circle class="avatar-core" cx="90" cy="131" r="13"/><circle class="avatar-core-inner" cx="90" cy="131" r="5"/>
+        </svg>
+      </div>
+      <span class="voice-kicker">COGNITIVE AUDIO INTERFACE</span><h2 id="voice-state">INITIALISING</h2><p id="voice-caption">Preparing the local voice link…</p>
+      <div id="voice-wave" class="voice-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="voice-controls"><button id="voice-interrupt">◉ INTERRUPT / LISTEN</button><button id="voice-end">END CONVERSATION</button></div>
+    </div>
+    <aside class="voice-transcript"><div class="card-head"><span>CONVERSATION STREAM</span><b>LIVE</b></div><div id="voice-log"><p>Voice session activity will appear here.</p></div></aside>
+    <footer><span>Whisper STT</span><i></i><span>Ollama Reasoning</span><i></i><span>Local Speech</span></footer>
+  </section>
 </body>
 </html>

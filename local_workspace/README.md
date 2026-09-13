@@ -27,8 +27,8 @@ Open <http://127.0.0.1:9001>. The server deliberately binds only to the loopback
 - Explicit categorized memory and “remember that…” capture.
 - Local semantic RAG over PDF, TXT, Markdown, DOCX, CSV, and XLSX files.
 - Source chips and filename/page/sheet citations in retrieved answers.
-- Browser push-to-talk input transcribed locally with faster-whisper.
-- Optional spoken assistant replies through macOS `say`.
+- Continuous conversational voice sessions: speak, pause, receive a short spoken reply, then continue talking.
+- Local faster-whisper transcription, voice activity detection, and interruptible browser/macOS speech.
 - Local mission planning and status tracking.
 - Live health matrix for inference, embeddings, voice, speech, database, and network boundary.
 - A command-center dashboard with AI core status, live intelligence, active local agents, mission timeline, system monitor, memory insights, model status, quick commands, and a persistent voice dock.
@@ -43,7 +43,9 @@ Upload a file from **Knowledge Base**. DAKSH extracts page or sheet text, splits
 
 ## Voice
 
-The first microphone transcription downloads the selected open Whisper model to the local Hugging Face cache. `tiny` is the default for speed. Browser microphone permission is required. Spoken replies are disabled until enabled in **Tools & Skills**.
+Use **Start Voice Session** in the command dock, sidebar, or quick commands to open the full-screen DAKSH Voice Link. It listens until you pause, transcribes the turn locally with faster-whisper, sends it automatically to the local Ollama model, speaks DAKSH's concise answer, and resumes listening. **Interrupt / Listen** stops speech and opens the microphone for the next turn; **End Session** closes the microphone and speech engine. The smaller microphone inside normal Chat remains available for one-turn dictation and review before sending.
+
+The first transcription downloads the selected open Whisper model to the local Hugging Face cache. `tiny` is the default for speed. Browser microphone permission is required. Voice sessions use an installed local browser or macOS voice and do not call a paid speech API.
 
 ## Validation
 

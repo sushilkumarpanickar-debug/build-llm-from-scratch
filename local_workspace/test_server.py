@@ -38,7 +38,9 @@ class WorkspaceTest(unittest.TestCase):
         self.assertIn("AI CORE OVERVIEW", page.text)
         self.assertIn("LIVE INTELLIGENCE FEED", page.text)
         self.assertIn("MISSION TIMELINE", page.text)
-        self.assertIn("TALK TO DAKSH", page.text)
+        self.assertIn("START VOICE SESSION", page.text)
+        self.assertIn("DAKSH VOICE LINK", page.text)
+        self.assertIn("COGNITIVE CORE", page.text)
         self.assertIn("FINANCE INTELLIGENCE", page.text)
         self.assertIn("MCP &amp; CONNECTOR CONTROL PLANE", page.text)
         self.assertEqual(self.client.get("/snns_logo.png").content[:8], b"\x89PNG\r\n\x1a\n")
@@ -109,6 +111,23 @@ class WorkspaceTest(unittest.TestCase):
         self.assertEqual(response.json()["sources"][0]["title"], "facts.txt")
         messages = self.client.get(f"/api/state?conversation_id={conversation['id']}").json()["messages"]
         self.assertEqual(messages[-1]["sources"][0]["title"], "facts.txt")
+
+    def test_voice_chat_uses_concise_conversational_prompt(self):
+        conversation = self.client.get("/api/state").json()["conversation"]
+        captured = {}
+
+        def fake_chat(_model, messages):
+            captured["system"] = messages[0]["content"]
+            return "I am listening. What shall we work on?"
+
+        with patch("local_workspace.server.ollama_client.chat", side_effect=fake_chat):
+            response = self.post("/api/chat", {
+                "prompt": "Hello DAKSH", "model": "qwen-test",
+                "conversation_id": conversation["id"], "voice_mode": True, "speak": False,
+            })
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertIn("spoken conversation", captured["system"])
+        self.assertIn("one to four short sentences", captured["system"])
 
     def test_settings_task_and_write_token(self):
         self.assertEqual(self.client.post("/api/settings", json={"model":"qwen-test"}).status_code, 403)

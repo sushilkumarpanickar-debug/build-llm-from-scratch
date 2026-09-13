@@ -7,6 +7,10 @@ let integrationState = [];
 let busy = false;
 let recorder;
 let audioChunks = [];
+const voiceSession = {
+  active: false, stream: null, context: null, analyser: null, samples: null,
+  recorder: null, chunks: [], frame: null, timeout: null, processing: false, speaking: false
+};
 
 function el(tag, text, className) {
   const node = document.createElement(tag);
@@ -327,10 +331,8 @@ function setBusy(value) {
 }
 
 function setRecordingUi(recording) {
-  for (const id of ['mic', 'side-mic', 'dock-mic', 'quick-voice']) $(id).classList.toggle('recording', recording);
+  $('mic').classList.toggle('recording', recording);
   $('mic').textContent = recording ? '■ STOP' : '◉ MIC';
-  $('voice-label').textContent = recording ? 'Listening' : (health.transcription ? 'Ready' : 'Unavailable');
-  $('dock-status').textContent = recording ? 'Listening locally · tap to stop' : (health.transcription ? 'Tap to speak' : 'Voice offline');
 }
 
 async function beginRecording() {
@@ -357,6 +359,193 @@ async function beginRecording() {
 async function toggleRecording() {
   try { if (recorder && recorder.state === 'recording') recorder.stop(); else await beginRecording(); }
   catch (error) { notice(error.message, true); }
+}
+
+function setVoiceState(stateName, title, caption) {
+  $('voice-mode').dataset.state = stateName;
+  $('voice-state').textContent = title;
+  $('voice-caption').textContent = caption;
+  $('voice-label').textContent = title.charAt(0) + title.slice(1).toLowerCase();
+  $('dock-status').textContent = caption;
+}
+
+function addVoiceTurn(role, text) {
+  const root = $('voice-log');
+  if (root.children.length === 1 && root.firstElementChild.tagName === 'P') root.replaceChildren();
+  const turn = el('article', undefined, `voice-turn ${role}`);
+  turn.append(el('strong', role === 'user' ? 'YOU' : role === 'assistant' ? 'DAKSH' : 'SYSTEM'), el('p', text));
+  root.append(turn);
+  root.scrollTop = root.scrollHeight;
+}
+
+function stopVoiceCapture() {
+  if (voiceSession.frame) cancelAnimationFrame(voiceSession.frame);
+  if (voiceSession.timeout) clearTimeout(voiceSession.timeout);
+  voiceSession.frame = null; voiceSession.timeout = null;
+  if (voiceSession.recorder && voiceSession.recorder.state === 'recording') voiceSession.recorder.stop();
+  $('voice-mode').style.setProperty('--voice-level', 0);
+}
+
+async function listenVoiceTurn() {
+  if (!voiceSession.active || voiceSession.processing) return;
+  if (voiceSession.recorder && voiceSession.recorder.state === 'recording') return;
+  if (!voiceSession.stream) throw Error('Microphone stream is unavailable.');
+  voiceSession.chunks = [];
+  let heardSpeech = false;
+  let lastSpeech = Date.now();
+  const started = Date.now();
+  const recording = new MediaRecorder(voiceSession.stream);
+  voiceSession.recorder = recording;
+  recording.addEventListener('dataavailable', event => { if (event.data.size) voiceSession.chunks.push(event.data); });
+  recording.addEventListener('stop', () => processVoiceTurn(voiceSession.chunks, recording.mimeType));
+  recording.start(200);
+  setVoiceState('listening', 'LISTENING', 'Speak naturally. I will respond when you pause.');
+
+  const watch = () => {
+    if (!voiceSession.active || recording.state !== 'recording') return;
+    voiceSession.analyser.getByteTimeDomainData(voiceSession.samples);
+    let energy = 0;
+    for (const sample of voiceSession.samples) energy += Math.pow((sample - 128) / 128, 2);
+    const rms = Math.sqrt(energy / voiceSession.samples.length);
+    const level = Math.min(1, rms * 11);
+    $('voice-mode').style.setProperty('--voice-level', level.toFixed(2));
+    if (rms > 0.025) { heardSpeech = true; lastSpeech = Date.now(); }
+    if (heardSpeech && Date.now() - lastSpeech > 1150 && Date.now() - started > 900) return stopVoiceCapture();
+    voiceSession.frame = requestAnimationFrame(watch);
+  };
+  voiceSession.frame = requestAnimationFrame(watch);
+  voiceSession.timeout = setTimeout(stopVoiceCapture, 20000);
+}
+
+async function transcribeVoiceTurn(chunks, mimeType) {
+  const blob = new Blob(chunks, {type: mimeType || 'audio/webm'});
+  if (blob.size < 500) return '';
+  const extension = /mp4|m4a/i.test(mimeType) ? 'mp4' : /ogg/i.test(mimeType) ? 'ogg' : 'webm';
+  const form = new FormData();
+  form.append('scope', currentScope()); form.append('file', blob, `voice.${extension}`);
+  const response = await fetch('/api/voice/transcribe', {method: 'POST', headers: {'X-Workspace-Token': state.token}, body: form});
+  const result = await response.json();
+  if (!response.ok) throw Error(result.error || 'Transcription failed');
+  return result.text.trim();
+}
+
+function spokenText(text) {
+  return text.replace(/```[\s\S]*?```/g, ' code omitted from speech ')
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1').replace(/[*_#>`]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function speakVoiceAnswer(text) {
+  return new Promise(async resolve => {
+    const speech = spokenText(text);
+    if (!speech) return resolve();
+    setVoiceState('speaking', 'SPEAKING', 'You may interrupt me at any time.');
+    voiceSession.speaking = true;
+    if ('speechSynthesis' in window && 'SpeechSynthesisUtterance' in window) {
+      const utterance = new SpeechSynthesisUtterance(speech);
+      const voices = speechSynthesis.getVoices();
+      utterance.voice = voices.find(item => /daniel|alex|arthur/i.test(item.name) && /^en/i.test(item.lang)) || voices.find(item => /^en/i.test(item.lang)) || null;
+      utterance.rate = 0.96; utterance.pitch = 0.82;
+      utterance.onend = utterance.onerror = () => { voiceSession.speaking = false; resolve(); };
+      speechSynthesis.cancel(); speechSynthesis.speak(utterance);
+      return;
+    }
+    try { await jsonRequest('/api/voice/speak', {text: speech}); }
+    finally {
+      setTimeout(() => { voiceSession.speaking = false; resolve(); }, Math.min(15000, Math.max(1500, speech.length * 48)));
+    }
+  });
+}
+
+async function processVoiceTurn(chunks, mimeType) {
+  if (!voiceSession.active) return;
+  voiceSession.processing = true;
+  try {
+    setVoiceState('thinking', 'TRANSCRIBING', 'Whisper is processing your voice locally.');
+    const prompt = await transcribeVoiceTurn(chunks, mimeType);
+    if (!voiceSession.active) return;
+    if (!prompt) {
+      addVoiceTurn('system', 'I did not detect clear speech. Listening again.');
+      voiceSession.processing = false;
+      return setTimeout(() => listenVoiceTurn().catch(showVoiceError), 500);
+    }
+    addVoiceTurn('user', prompt);
+    setVoiceState('thinking', 'REASONING', 'The local Ollama model is preparing a response.');
+    const result = await jsonRequest('/api/chat', {
+      prompt, model: $('model').value, conversation_id: state.conversation.id,
+      speak: false, voice_mode: true
+    });
+    if (!voiceSession.active) return;
+    addVoiceTurn('assistant', result.response);
+    await load(state.conversation.id);
+    await speakVoiceAnswer(result.response);
+  } catch (error) {
+    showVoiceError(error);
+    await new Promise(resolve => setTimeout(resolve, 1400));
+  } finally {
+    voiceSession.processing = false;
+    if (voiceSession.active && !voiceSession.speaking) listenVoiceTurn().catch(showVoiceError);
+  }
+}
+
+function showVoiceError(error) {
+  const message = error && error.message ? error.message : String(error);
+  setVoiceState('error', 'VOICE LINK ERROR', message);
+  addVoiceTurn('system', message);
+}
+
+async function openVoiceMode() {
+  if (voiceSession.active) return;
+  if (!health.transcription) return notice('Local voice transcription is not ready.', true);
+  if (!navigator.mediaDevices || !window.MediaRecorder) return notice('This browser cannot start a voice session.', true);
+  voiceSession.active = true;
+  $('voice-mode').hidden = false;
+  document.body.classList.add('voice-active');
+  $('voice-domain').textContent = currentScope().toUpperCase();
+  $('voice-model').textContent = state.settings.model || state.models[0] || 'OFFLINE';
+  $('voice-memory').textContent = `${state.notes.length} RECORDS`;
+  $('voice-log').replaceChildren(el('p', 'Voice link opened. Your turns will appear here.'));
+  try {
+    setVoiceState('idle', 'MICROPHONE ACCESS', 'Allow microphone access to begin the private voice session.');
+    const microphone = navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}})
+      .then(stream => { if (!voiceSession.active) stream.getTracks().forEach(track => track.stop()); return stream; });
+    const permissionTimeout = new Promise((_, reject) => setTimeout(() => reject(Error('Microphone access timed out. Allow microphone permission in your browser, then start the session again.')), 12000));
+    voiceSession.stream = await Promise.race([microphone, permissionTimeout]);
+    const AudioEngine = window.AudioContext || window.webkitAudioContext;
+    voiceSession.context = new AudioEngine();
+    if (voiceSession.context.state === 'suspended') await voiceSession.context.resume();
+    voiceSession.analyser = voiceSession.context.createAnalyser();
+    voiceSession.analyser.fftSize = 1024;
+    voiceSession.samples = new Uint8Array(voiceSession.analyser.fftSize);
+    voiceSession.context.createMediaStreamSource(voiceSession.stream).connect(voiceSession.analyser);
+    addVoiceTurn('system', 'Voice conversation ready. Speak after the listening signal.');
+    await listenVoiceTurn();
+  } catch (error) {
+    showVoiceError(error);
+    voiceSession.active = false;
+  }
+}
+
+function endVoiceMode() {
+  voiceSession.active = false; voiceSession.processing = false; voiceSession.speaking = false;
+  stopVoiceCapture();
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  if (voiceSession.stream) voiceSession.stream.getTracks().forEach(track => track.stop());
+  if (voiceSession.context) voiceSession.context.close().catch(() => {});
+  voiceSession.stream = null; voiceSession.context = null; voiceSession.analyser = null; voiceSession.recorder = null;
+  $('voice-mode').hidden = true; document.body.classList.remove('voice-active');
+  $('voice-label').textContent = health.transcription ? 'Ready' : 'Unavailable';
+  $('dock-status').textContent = health.transcription ? 'Continuous conversation' : 'Voice offline';
+}
+
+function interruptVoice() {
+  if (!voiceSession.active) return openVoiceMode();
+  if (voiceSession.processing && !voiceSession.speaking) {
+    setVoiceState('thinking', 'REASONING', 'Finishing the current local response.');
+    return;
+  }
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  voiceSession.speaking = false; voiceSession.processing = false;
+  listenVoiceTurn().catch(showVoiceError);
 }
 
 document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => show(button.dataset.view, button.dataset.message, button)));
@@ -391,7 +580,12 @@ $('chat-form').addEventListener('submit', async event => {
   finally { setBusy(false); }
 });
 
-for (const id of ['mic', 'side-mic', 'dock-mic', 'quick-voice', 'overview-voice-button']) $(id).addEventListener('click', toggleRecording);
+$('mic').addEventListener('click', toggleRecording);
+for (const id of ['side-mic', 'dock-mic', 'quick-voice', 'overview-voice-button']) $(id).addEventListener('click', openVoiceMode);
+$('voice-close').addEventListener('click', endVoiceMode);
+$('voice-end').addEventListener('click', endVoiceMode);
+$('voice-interrupt').addEventListener('click', interruptVoice);
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && voiceSession.active) endVoiceMode(); });
 
 $('note-form').addEventListener('submit', async event => {
   event.preventDefault();
