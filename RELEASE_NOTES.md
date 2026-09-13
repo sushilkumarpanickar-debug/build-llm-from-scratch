@@ -1,3 +1,12 @@
+# v0.12.0 - Interactive Second Brain HUD
+
+- Rebuilt the web dashboard as a responsive, live DAKSH HUD with a central core,
+  system telemetry, quick actions, command channel, and private-memory capture.
+- Made the knowledge graph durable in the private DAKSH data directory and added
+  documented memory/query APIs with source-traceable chat grounding.
+- Registered built-in text processing, data analysis, and synthesis skills at
+  runtime, and corrected natural-language command parsing.
+
 # v0.11.0 - Durable Approved Actions
 
 - Persisted approval-gated OpenCode jobs and their terminal results safely across

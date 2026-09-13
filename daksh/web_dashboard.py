@@ -193,6 +193,48 @@ def create_daksh_dashboard(*, start_telegram_polling: bool = True) -> Flask:
     def router_stats():
         """Get LLM router statistics."""
         return jsonify(llm_router.get_stats())
+
+    @app.route('/api/brain/status')
+    def brain_status():
+        """Expose the real local graph, skill, and work metrics for the HUD."""
+        return jsonify(daksh.orchestrator.get_system_status())
+
+    @app.route('/api/brain/documents', methods=['GET', 'POST'])
+    def brain_documents():
+        """List metadata or add user-confirmed text to the private knowledge graph."""
+        graph = daksh.orchestrator.knowledge_graph
+        if graph is None:
+            return jsonify({"error": "Knowledge graph is unavailable"}), 503
+        if request.method == "GET":
+            return jsonify({"documents": graph.list_documents()})
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+        title, content, source = data.get("title"), data.get("content"), data.get("source", "manual_entry")
+        if not all(isinstance(value, str) for value in (title, content, source)):
+            return jsonify({"error": "Title, content, and source must be strings"}), 400
+        title, content, source = title.strip(), content.strip(), source.strip()
+        if not title or not content:
+            return jsonify({"error": "Title and content are required"}), 400
+        if len(title) > 200 or len(content) > 100_000 or len(source) > 1_000:
+            return jsonify({"error": "Document exceeds the allowed size"}), 400
+        document = graph.add_document(title, content, source)
+        return jsonify({
+            "id": document.id, "title": document.title, "source": document.source,
+            "chunks": len(document.chunks), "entities": len(document.entities),
+        }), 201
+
+    @app.route('/api/brain/query', methods=['POST'])
+    def brain_query():
+        """Search the private second-brain graph and return bounded citations."""
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not isinstance(data.get("query"), str):
+            return jsonify({"error": "Query must be a string"}), 400
+        query = data["query"].strip()
+        if not query or len(query) > 10_000:
+            return jsonify({"error": "Query must be between 1 and 10,000 characters"}), 400
+        result = daksh.orchestrator.query_knowledge(query, top_k=5)
+        return jsonify(result or {"error": "Knowledge graph is unavailable"}), 200 if result else 503
     
     @app.route('/api/router/analyze', methods=['POST'])
     def analyze_routing():

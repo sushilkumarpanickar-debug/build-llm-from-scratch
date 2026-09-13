@@ -5,10 +5,13 @@ Your second brain for persistent knowledge management
 
 import uuid
 import json
+import os
 from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from collections import defaultdict
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from loguru import logger
 
 from config.settings import (
@@ -62,13 +65,16 @@ class KnowledgeGraph:
     Acts as your second brain for persistent learning.
     """
     
-    def __init__(self):
+    def __init__(self, storage_path: Optional[Path] = None):
         self.id = str(uuid.uuid4())
         self.nodes: Dict[str, GraphNode] = {}
         self.edges: Dict[str, GraphEdge] = {}
         self.documents: Dict[str, Document] = {}
         self.adjacency_list: Dict[str, List[str]] = defaultdict(list)
         self.reverse_adjacency: Dict[str, List[str]] = defaultdict(list)
+        self.storage_path = storage_path
+        self._loading = False
+        self._load()
         
         logger.info("KnowledgeGraph initialized (Your Second Brain)")
     
@@ -148,7 +154,72 @@ class KnowledgeGraph:
             self.reverse_adjacency[entity_node.id].append(doc_node.id)
         
         logger.info(f"Document added: {title} ({len(doc.chunks)} chunks, {len(doc.entities)} entities)")
+        self._save()
         return doc
+
+    def list_documents(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Return bounded, source-traceable document metadata without raw content."""
+        return [
+            {
+                "id": document.id,
+                "title": document.title,
+                "source": document.source,
+                "chunks": len(document.chunks),
+                "entities": len(document.entities),
+                "created_at": document.created_at.isoformat(),
+            }
+            for document in list(self.documents.values())[-limit:]
+        ]
+
+    def _load(self) -> None:
+        if self.storage_path is None or not self.storage_path.exists():
+            return
+        try:
+            records = json.loads(self.storage_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise RuntimeError("Unable to read the DAKSH knowledge store.") from error
+        if not isinstance(records, list):
+            raise RuntimeError("The DAKSH knowledge store is invalid.")
+        self._loading = True
+        try:
+            for record in records:
+                if not isinstance(record, dict) or not all(
+                    isinstance(record.get(key), str) for key in ("title", "content", "source")
+                ):
+                    raise RuntimeError("The DAKSH knowledge store is invalid.")
+                document = self.add_document(record["title"], record["content"], record["source"])
+                saved_id = record.get("id")
+                if isinstance(saved_id, str) and saved_id and saved_id != document.id:
+                    generated_id = document.id
+                    self.documents.pop(generated_id)
+                    document.id = saved_id
+                    self.documents[saved_id] = document
+                    for node in self.nodes.values():
+                        if node.data.get("doc_id") == generated_id:
+                            node.data["doc_id"] = saved_id
+        finally:
+            self._loading = False
+
+    def _save(self) -> None:
+        if self.storage_path is None or self._loading:
+            return
+        records = [
+            {"id": document.id, "title": document.title, "content": document.content, "source": document.source}
+            for document in self.documents.values()
+        ]
+        self.storage_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        try:
+            with NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=self.storage_path.parent, delete=False
+            ) as temporary_file:
+                json.dump(records, temporary_file, ensure_ascii=False, separators=(",", ":"))
+                temporary_file.flush()
+                os.fsync(temporary_file.fileno())
+                temporary_path = Path(temporary_file.name)
+            os.chmod(temporary_path, 0o600)
+            temporary_path.replace(self.storage_path)
+        except OSError as error:
+            raise RuntimeError("Unable to persist the DAKSH knowledge store.") from error
     
     def query(self, query_text: str, top_k: int = RAG_RETRIEVE_TOP_K) -> Dict[str, Any]:
         """

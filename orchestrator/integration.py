@@ -7,6 +7,7 @@ import uuid
 from typing import Any, Dict, List, Optional
 from dataclasses import asdict, dataclass
 from datetime import datetime
+from pathlib import Path
 from loguru import logger
 
 from orchestrator.commander import Commander
@@ -14,6 +15,8 @@ from skills.skill_router import SkillRouter, SkillInput
 from rag.knowledge_graph import KnowledgeGraph
 from mcp.mcp_server import MCPServer
 from work_management.work_tracker import WorkTracker
+from config.settings import DAKSH_DATA_DIR
+from skills.built_in import DataAnalysisSkill, SynthesisSkill, TextProcessingSkill
 
 
 @dataclass
@@ -25,6 +28,7 @@ class SystemConfig:
     enable_mcp: bool = True
     enable_work_tracking: bool = True
     zero_token_mode: bool = True  # Always True
+    knowledge_storage_path: Optional[str] = None
 
 
 class OrchestratorSystem:
@@ -52,10 +56,17 @@ class OrchestratorSystem:
         self.mcp_server: Optional[MCPServer] = None
         
         if self.config.enable_rag:
-            self.knowledge_graph = KnowledgeGraph()
+            storage_path = (
+                Path(self.config.knowledge_storage_path)
+                if self.config.knowledge_storage_path
+                else DAKSH_DATA_DIR / "knowledge_graph.json"
+            )
+            self.knowledge_graph = KnowledgeGraph(storage_path)
         
         if self.config.enable_mcp:
             self.mcp_server = MCPServer()
+        for skill in (TextProcessingSkill(), DataAnalysisSkill(), SynthesisSkill()):
+            self.skill_router.register_skill(skill)
         
         logger.info(
             f"OrchestratorSystem initialized (ID: {self.id})"
@@ -111,14 +122,6 @@ class OrchestratorSystem:
                 skills_used=self._extract_skills_from_result(execution_result),
                 execution_time_ms=execution_result.get("execution_time_seconds", 0) * 1000,
                 status="completed" if execution_result.get("status") == "completed" else "failed",
-            )
-        
-        # Step 4: Store in knowledge graph
-        if self.knowledge_graph:
-            self.knowledge_graph.add_document(
-                title=f"Execution: {objective[:50]}",
-                content=str(execution_result),
-                source="system_execution"
             )
         
         return execution_result

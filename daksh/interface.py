@@ -13,6 +13,7 @@ Features:
 import uuid
 import threading
 import time
+import re
 from pathlib import Path
 from typing import Any, Dict, Optional, Callable, List
 from dataclasses import dataclass, field
@@ -22,7 +23,7 @@ from loguru import logger
 
 from config.settings import DAKSH_DATA_DIR
 from daksh.cloud_storage import InteractionHistoryStore
-from orchestrator.integration import OrchestratorSystem
+from orchestrator.integration import OrchestratorSystem, SystemConfig
 from llm_providers.router import LLMRouter, LLMRequest
 
 
@@ -91,11 +92,13 @@ class DAKSH:
     def __init__(self, config: Optional[DAKSHConfig] = None):
         self.id = str(uuid.uuid4())
         self.config = config or DAKSHConfig()
-        self.orchestrator = OrchestratorSystem()
+        data_directory = Path(self.config.data_directory) if self.config.data_directory else DAKSH_DATA_DIR
+        self.orchestrator = OrchestratorSystem(
+            SystemConfig(knowledge_storage_path=str(data_directory / "knowledge_graph.json"))
+        )
         self.llm_router = LLMRouter()
         
         self.status = DAKSHStatus.IDLE
-        data_directory = Path(self.config.data_directory) if self.config.data_directory else DAKSH_DATA_DIR
         self.history_store = InteractionHistoryStore(data_directory)
         self.interaction_history = self._load_interaction_history()
         self.context_memory: Dict[str, Any] = {}
@@ -334,30 +337,20 @@ class DAKSH:
         text = user_input.lower().strip()
         params = {}
         
-        # Command patterns
-        if any(keyword in text for keyword in ["execute", "run", "do"]):
+        # Commands require an explicit leading action verb. Substring matching
+        # would turn normal questions such as "What does DAKSH use?" into work.
+        if match := re.match(r"^(?:execute|run|do)\s+(.+)$", text):
             command = "execute_objective"
-            # Extract objective from input
-            for keyword in ["execute", "run", "do"]:
-                if keyword in text:
-                    params["objective"] = text.split(keyword, 1)[1].strip()
-                    break
-        
-        elif any(keyword in text for keyword in ["query", "search", "find", "ask"]):
+            params["objective"] = match.group(1)
+        elif match := re.match(r"^(?:query|search|find|ask)\s+(.+)$", text):
             command = "query_knowledge"
-            for keyword in ["query", "search", "find", "ask"]:
-                if keyword in text:
-                    params["query"] = text.split(keyword, 1)[1].strip()
-                    break
-        
-        elif any(keyword in text for keyword in ["remember", "add", "store", "learn"]):
+            params["query"] = match.group(1)
+        elif re.match(r"^(?:remember|add|store|learn)\s+", text):
             command = "add_knowledge"
-            params["content"] = text
-        
-        elif any(keyword in text for keyword in ["status", "how are you", "what's up"]):
+            params["content"] = user_input
+        elif text in {"status", "how are you", "what's up"}:
             command = "system_status"
-        
-        elif any(keyword in text for keyword in ["help", "what can you do"]):
+        elif text in {"help", "what can you do"}:
             command = "help"
         
         else:
@@ -451,10 +444,16 @@ class DAKSH:
         """
         Handle general queries using LLM router.
         """
+        memory_context, sources = self._retrieve_memory_context(user_input)
         # Create LLM request
         llm_request = LLMRequest(
             prompt=user_input,
-            system_prompt="You are DAKSH, a helpful AI assistant. Respond concisely and naturally.",
+            system_prompt=(
+                "You are DAKSH, a helpful private local assistant. Respond concisely and naturally. "
+                "Use the supplied private-memory excerpts only when they are relevant. "
+                "Do not invent facts from memory.\n\n"
+                f"Private-memory excerpts:\n{memory_context or 'No relevant saved memory.'}"
+            ),
             task_type="general"
         )
         
@@ -468,9 +467,33 @@ class DAKSH:
         response = self.llm_router.execute(llm_request, decision)
         
         if response.status == "success":
-            return response.content
+            citation_text = f"\n\nSources: {', '.join(sources)}" if sources else ""
+            return f"{response.content}{citation_text}"
         else:
             return f"I encountered an issue: {response.error}"
+
+    def _retrieve_memory_context(self, query: str) -> tuple[str, List[str]]:
+        """Return small, source-traceable private-memory excerpts for a chat turn."""
+        results = self.orchestrator.query_knowledge(query, top_k=3)
+        if not results:
+            return "", []
+        excerpts: List[str] = []
+        sources: List[str] = []
+        for result in results.get("top_results", []):
+            if result.get("type") != "chunk":
+                continue
+            data = result.get("data", {})
+            excerpt = data.get("chunk_text")
+            document_id = data.get("doc_id")
+            if not isinstance(excerpt, str) or not isinstance(document_id, str):
+                continue
+            document = self.orchestrator.knowledge_graph.documents.get(document_id)
+            if document is None or document.source == "system_execution":
+                continue
+            excerpts.append(f"[{document.title}] {excerpt}")
+            if document.source and document.source not in sources:
+                sources.append(document.source)
+        return "\n".join(excerpts)[:2_000], sources[:3]
     
     def _update_status(self, new_status: DAKSHStatus) -> None:
         """
