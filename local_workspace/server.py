@@ -1,20 +1,25 @@
 """DAKSH Phase 1: private FastAPI workspace for macOS."""
 import argparse
+import hashlib
+import hmac
 import json
+import os
 import re
 import secrets
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 import uvicorn
-from fastapi import Body, Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import Body, Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 
 try:
     from .db import MEMORY_CATEGORIES, SCOPES, Store, utcnow
-    from . import finance, ingestion, integrations, ollama_client, voice
+    from . import communications, finance, ingestion, integrations, ollama_client, voice
 except ImportError:
+    import communications
     import finance
     from db import MEMORY_CATEGORIES, SCOPES, Store, utcnow
     import ingestion
@@ -27,6 +32,35 @@ STATIC = ROOT / "static"
 TOKEN = secrets.token_urlsafe(32)
 GENERATION_LOCK = threading.Lock()
 SENSITIVE_MEMORY = re.compile(r"\b(password|passcode|otp|cvv|card number|aadhaar|aadhar|private key|seed phrase)\b", re.I)
+
+
+def _truthy_env(name):
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _poll_seconds():
+    try:
+        return max(0, min(3600, int(os.environ.get("DAKSH_CONNECTOR_POLL_SECONDS", "0"))))
+    except ValueError:
+        return 0
+
+
+def _start_connector_poller(app, store):
+    seconds = _poll_seconds()
+    if not seconds or getattr(app.state, "connector_poller_started", False):
+        return
+    app.state.connector_poller_started = True
+
+    def worker():
+        while True:
+            time.sleep(seconds)
+            for scope in SCOPES:
+                try:
+                    communications.poll_all(store, scope)
+                except Exception:
+                    store.audit(scope, "connector_poll_error", "background communication poll failed")
+
+    threading.Thread(target=worker, daemon=True, name="daksh-connector-poller").start()
 
 
 def require_scope(scope):
@@ -109,7 +143,9 @@ def create_app(data_dir=None):
     @app.middleware("http")
     async def local_only(request: Request, call_next):
         host = request.headers.get("host", "").split(":", 1)[0].lower()
-        if host not in {"127.0.0.1", "localhost", "testserver"}:
+        whatsapp_webhook = request.url.path.startswith("/api/webhooks/whatsapp")
+        external_webhook_allowed = whatsapp_webhook and _truthy_env("DAKSH_ALLOW_EXTERNAL_WEBHOOKS")
+        if host not in {"127.0.0.1", "localhost", "testserver"} and not external_webhook_allowed:
             return JSONResponse({"error": "Local access only."}, status_code=403)
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
@@ -139,7 +175,8 @@ def create_app(data_dir=None):
             "ollama": bool(installed), "models": chat,
             "embedding_model": embedding_name,
             "speech": Path("/usr/bin/say").exists(), "transcription": _module_available("faster_whisper"),
-            "finance": True, "mcp_finance": True, "local_only": True,
+            "finance": True, "mcp_finance": True, "communications": True,
+            "connector_poll_seconds": _poll_seconds(), "local_only": True,
         }
 
     @app.get("/api/state")
@@ -154,6 +191,7 @@ def create_app(data_dir=None):
             "notes": store.rows("SELECT * FROM notes WHERE scope=? ORDER BY id DESC LIMIT 500", (scope,)),
             "tasks": store.rows("SELECT * FROM tasks WHERE scope=? ORDER BY id DESC LIMIT 200", (scope,)),
             "documents": store.rows("SELECT * FROM documents WHERE scope=? ORDER BY id DESC LIMIT 200", (scope,)),
+            "communications": communications.snapshot(store, scope),
             "settings": setting_map(store, scope),
         }
 
@@ -241,6 +279,94 @@ def create_app(data_dir=None):
     @app.get("/api/integrations")
     def integration_catalog():
         return {"integrations": integrations.catalog(), "auto_install": False, "default_access": "disabled unless built in"}
+
+    @app.get("/api/communications")
+    def communication_state(scope: str = "Personal"):
+        scope = require_scope(scope)
+        return communications.snapshot(store, scope)
+
+    @app.post("/api/communications/poll", dependencies=[Depends(authorize)])
+    def poll_communications(data: dict = Body(default_factory=dict)):
+        scope = require_scope(data.get("scope", "Personal"))
+        connector = data.get("connector") or None
+        result = communications.poll_all(store, scope, connector)
+        store.audit(scope, "communications_polled", connector or "all")
+        return result
+
+    @app.post("/api/communications/messages/{message_id}/status", dependencies=[Depends(authorize)])
+    def communication_message_status(message_id: int, data: dict = Body(...)):
+        scope = require_scope(data.get("scope", "Personal"))
+        try:
+            saved = communications.update_message_status(store, scope, message_id, str(data.get("status", "reviewed")))
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        if not saved:
+            raise HTTPException(404, "Message not found in this workspace.")
+        return {"status": "saved"}
+
+    @app.post("/api/communications/messages/{message_id}/task", dependencies=[Depends(authorize)])
+    def communication_message_task(message_id: int, data: dict = Body(default_factory=dict)):
+        scope = require_scope(data.get("scope", "Personal"))
+        try:
+            task_id = communications.stage_message_as_task(store, scope, message_id)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        return {"status": "staged", "task_id": task_id}
+
+    @app.post("/api/communications/approvals/{approval_id}", dependencies=[Depends(authorize)])
+    def communication_approval_decision(approval_id: int, data: dict = Body(...)):
+        scope = require_scope(data.get("scope", "Personal"))
+        decision = str(data.get("status", "")).lower()
+        if decision not in {"approved", "approve", "rejected", "reject"}:
+            raise HTTPException(400, "Choose approved or rejected.")
+        try:
+            saved = communications.decide_approval(store, scope, approval_id, decision, str(data.get("note", "DAKSH UI decision")))
+        except (ValueError, communications.ConnectorUnavailable) as exc:
+            raise HTTPException(502, str(exc)) from exc
+        if not saved:
+            raise HTTPException(404, "Pending approval not found in this workspace.")
+        return {"status": "saved"}
+
+    @app.post("/api/communications/approvals/{approval_id}/reply", dependencies=[Depends(authorize)])
+    def communication_reply_update(approval_id: int, data: dict = Body(...)):
+        scope = require_scope(data.get("scope", "Personal"))
+        try:
+            saved = communications.update_email_reply(store, scope, approval_id, str(data.get("body", "")))
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        if not saved:
+            raise HTTPException(404, "Pending Gmail reply proposal not found in this workspace.")
+        return {"status": "saved"}
+
+    @app.get("/api/webhooks/whatsapp")
+    def whatsapp_webhook_verify(
+        hub_mode: str = Query("", alias="hub.mode"),
+        hub_verify_token: str = Query("", alias="hub.verify_token"),
+        hub_challenge: str = Query("", alias="hub.challenge"),
+    ):
+        expected = os.environ.get("DAKSH_WHATSAPP_VERIFY_TOKEN", "")
+        if hub_mode == "subscribe" and expected and secrets.compare_digest(hub_verify_token, expected):
+            return PlainTextResponse(hub_challenge)
+        raise HTTPException(403, "WhatsApp webhook verification failed.")
+
+    @app.post("/api/webhooks/whatsapp")
+    async def whatsapp_webhook_receive(request: Request, scope: str = "Personal"):
+        scope = require_scope(scope)
+        app_secret = os.environ.get("DAKSH_WHATSAPP_APP_SECRET", "")
+        if not os.environ.get("DAKSH_WHATSAPP_VERIFY_TOKEN") or not app_secret:
+            raise HTTPException(403, "WhatsApp webhook is not configured.")
+        body = await request.body()
+        supplied = request.headers.get("X-Hub-Signature-256", "")
+        expected = "sha256=" + hmac.new(app_secret.encode(), body, hashlib.sha256).hexdigest()
+        if not supplied or not secrets.compare_digest(supplied, expected):
+            raise HTTPException(403, "WhatsApp webhook signature is invalid.")
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(400, "WhatsApp webhook body is not valid JSON.") from exc
+        result = communications.process_whatsapp_webhook(store, scope, payload)
+        store.audit(scope, "whatsapp_webhook_received", json.dumps(result))
+        return {"status": "received", **result}
 
     @app.post("/api/finance/analyze", dependencies=[Depends(authorize)])
     async def analyze_finance(scope: str = Form("Personal"), file: UploadFile = File(...)):
@@ -410,6 +536,7 @@ def create_app(data_dir=None):
         media = {"app.js": "text/javascript", "style.css": "text/css", "snns_logo.png": "image/png", "snns_emblem.png": "image/png"}[asset_name]
         return FileResponse(STATIC / asset_name, media_type=media)
 
+    _start_connector_poller(app, store)
     return app
 
 

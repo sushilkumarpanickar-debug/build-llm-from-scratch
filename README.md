@@ -1,6 +1,6 @@
 # DAKSH · SNNS Local Intelligence
 
-DAKSH Phase 1 is a private local-first JARVIS-style second brain for macOS. It uses free local models through Ollama, local faster-whisper voice input, macOS speech output, SQLite memory, document learning/RAG for PDF, TXT, Markdown, DOCX, CSV, and XLSX, and deterministic finance profiling.
+DAKSH Phase 1 is a private local-first JARVIS-style second brain for macOS. It uses free local models through Ollama, local faster-whisper voice input, macOS speech output, SQLite memory, document learning/RAG for PDF, TXT, Markdown, DOCX, CSV, and XLSX, deterministic finance profiling, and an approval-controlled communications bridge.
 
 The application runs on `127.0.0.1` by default. It does not require paid AI APIs, hosted inference, cloud analytics, or cloud storage.
 
@@ -38,6 +38,7 @@ That produces `dist/DAKSH.app` and `dist/DAKSH-macOS-app.zip`.
 - AI Agent Hub for ChatGPT-like conversation, Codex/OpenCode-like coding, Claude-like document work, Gemini-like multimodal planning, Perplexity-like sourced research, and supervised tool orchestration.
 - JARVIS-style DAKSH command-center UI with the transparent SNNS peacock/phoenix emblem.
 - Governed connector control plane with a read-only local Finance MCP.
+- Unified Telegram, Gmail, Google Calendar, and WhatsApp connector screen with allowlists, local Ollama reply proposals, approved Gmail Draft creation, read-only calendar access, staged instructions, and human approvals.
 - Codebase Memory MCP helper for token-efficient repository indexing.
 
 ## Project guides
@@ -45,5 +46,6 @@ That produces `dist/DAKSH.app` and `dist/DAKSH-macOS-app.zip`.
 - `local_workspace/README.md` — complete Phase 1 run guide.
 - `macos/DAKSH/README.md` — Xcode and native app guide.
 - `MCP_AND_SKILLS_REVIEW.md` — MCP/skill decisions and connector boundaries.
+- `COMMUNICATION_CONNECTORS.md` — guided Telegram, Google, and WhatsApp setup.
 - `CODEBASE_MEMORY.md` — local codebase-memory setup.
 - `COMPLETE_README.md` and the older Python modules — preserved orchestration research for later phases.

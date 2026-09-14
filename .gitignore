@@ -14,3 +14,5 @@ dist/
 macos/DAKSH/build/
 macos/DAKSH/DAKSH/AppIcon.icns
 macos/DAKSH/DAKSH/AppIcon.iconset/
+macos/DAKSH/DAKSH.xcodeproj/project.xcworkspace/xcuserdata/
+macos/DAKSH/DAKSH.xcodeproj/xcuserdata/

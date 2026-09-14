@@ -34,7 +34,9 @@ Decide which proposed JARVIS repositories, MCP servers, and skills add useful ca
 | Desktop Commander | Exclude | Broad host control | Its documented boundary is inadequate for personal data |
 | GnuCash MCP | Optional | Local accounting book analysis | Select and back up a SQLite book; read-only pilot first |
 | mcp-office | Exclude on this Mac | Office automation | Full capability depends on Windows COM |
-| Gmail, Calendar, Slack, Microsoft 365 | Optional cloud | Communications and scheduling | OAuth, account scoping, draft-first policy |
+| Telegram, Gmail, Google Calendar | Build connector bridge | Instructions, local reply proposals, approved Gmail drafts, and agenda | Sender allowlist; Gmail read/compose without a send tool; Calendar read-only; credentials kept locally |
+| WhatsApp Cloud API | Build intake, configure later | Receive allowed WhatsApp instructions | Meta Business app, signed public HTTPS webhook, sender allowlist |
+| Slack, Microsoft 365 | Optional cloud | Communications and scheduling | OAuth, account scoping, draft-first policy |
 | Google Ads | Optional read-only | Campaign reporting | Google Ads API account and OAuth project |
 | Meta Ads | Later | Campaign reporting/management | Verify official source and require campaign approval workflow |
 | Home Assistant | Later | Device control | Separate home network, entity allowlist, confirmation rules |
@@ -48,6 +50,8 @@ Decide which proposed JARVIS repositories, MCP servers, and skills add useful ca
 `local_workspace/finance_mcp.py` exposes the same analyzer as the `finance_analyze_file` MCP tool over stdio. It resolves every requested path and refuses anything outside `DAKSH_FINANCE_ROOT`. `config/mcp.example.json` provides an explicit client configuration template.
 
 `local_workspace/integrations.py` supplies the dashboard control plane. It reports decisions and local availability but never installs or starts third-party software.
+
+`local_workspace/communications.py` supplies the communication bridge. Telegram uses bot polling with an allowed-chat list; Gmail reads messages and creates only approved drafts; Google Calendar is read-only; WhatsApp accepts only signed Cloud API webhook payloads from allowed numbers. Local Ollama prepares editable email reply proposals. External instructions create approval records, and approval stages a local mission rather than carrying out an external action.
 
 OpenCode remains a separate coding agent rather than part of DAKSH's brain. The existing `snns-opencode` wrapper is approved for scoped future use in this project, but the executable is not currently on the Mac's shell path and no provider or model has been selected.
 
