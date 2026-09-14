@@ -319,9 +319,23 @@ def create_app(data_dir=None):
         decision = str(data.get("status", "")).lower()
         if decision not in {"approved", "approve", "rejected", "reject"}:
             raise HTTPException(400, "Choose approved or rejected.")
-        saved = communications.decide_approval(store, scope, approval_id, decision, str(data.get("note", "DAKSH UI decision")))
+        try:
+            saved = communications.decide_approval(store, scope, approval_id, decision, str(data.get("note", "DAKSH UI decision")))
+        except (ValueError, communications.ConnectorUnavailable) as exc:
+            raise HTTPException(502, str(exc)) from exc
         if not saved:
             raise HTTPException(404, "Pending approval not found in this workspace.")
+        return {"status": "saved"}
+
+    @app.post("/api/communications/approvals/{approval_id}/reply", dependencies=[Depends(authorize)])
+    def communication_reply_update(approval_id: int, data: dict = Body(...)):
+        scope = require_scope(data.get("scope", "Personal"))
+        try:
+            saved = communications.update_email_reply(store, scope, approval_id, str(data.get("body", "")))
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        if not saved:
+            raise HTTPException(404, "Pending Gmail reply proposal not found in this workspace.")
         return {"status": "saved"}
 
     @app.get("/api/webhooks/whatsapp")

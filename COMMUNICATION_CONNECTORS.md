@@ -1,6 +1,6 @@
 # DAKSH communications setup
 
-DAKSH has one local Communications screen for Telegram instructions, Gmail inbox review, Google Calendar events, WhatsApp intake, and human approval. Imported items are stored in the existing scoped SQLite database. No connector sends mail, changes calendar events, or performs an external action in Phase 1.
+DAKSH has one local Communications screen for Telegram instructions, Gmail inbox review and reply drafting, Google Calendar events, WhatsApp intake, and human approval. Imported items are stored in the existing scoped SQLite database. DAKSH can create an approved Gmail draft, but it has no email-send operation and does not change calendar events.
 
 Copy the required entries from `.env.example` into a local `.env` or export them before starting DAKSH. Real credentials and OAuth tokens belong only in `local_workspace/data/connectors/`, which Git ignores.
 
@@ -19,9 +19,16 @@ Any normal message from an allowed chat becomes a pending instruction. DAKSH rep
 2. Save the downloaded file as `local_workspace/data/connectors/google_oauth_client.json`.
 3. Install the local dependencies with `./setup_mac.sh`.
 4. Run `.venv/bin/python scripts/setup_google_connectors.py` and complete the Google sign-in in your browser.
-5. Restart DAKSH and select **Check Now** under Communications.
+5. If you previously authorized the read-only version, run the setup script again so the token includes draft creation.
+6. Restart DAKSH and select **Check Now** under Communications.
 
-DAKSH requests only `gmail.readonly` and `calendar.readonly`. It imports recent inbox metadata/snippets and upcoming events. A Gmail subject beginning `[DAKSH]`, or a body beginning `/daksh`, `/task`, or `/mission`, creates a pending instruction. The default Gmail search is `newer_than:7d` and can be narrowed with `DAKSH_GMAIL_QUERY`.
+DAKSH requests `gmail.readonly`, `gmail.compose`, and `calendar.readonly`. It has no code path for sending email. The default Gmail search is `newer_than:7d` and can be narrowed with `DAKSH_GMAIL_QUERY`.
+
+For every newly imported inbox message, DAKSH reads the text body and asks the selected local Ollama model to prepare a concise reply without inventing facts or commitments. The proposal remains local and editable in the Approval Queue. If Telegram is configured, the bot sends the sender, subject, and approval number. `/approve 12` or the app's **Approve to Gmail Draft** button creates a threaded Gmail draft; `/reject 12` keeps it out of Gmail. You review and send the final email manually in Gmail.
+
+Email and draft content is not copied into Telegram by default. Set `DAKSH_TELEGRAM_EMAIL_PREVIEW=true` only if you intentionally want the reply preview transmitted to your allowed Telegram chat.
+
+A Gmail subject beginning `[DAKSH]`, or a body beginning `/daksh`, `/task`, or `/mission`, also creates a mission-instruction approval. Set `DAKSH_GMAIL_AUTO_DRAFT=false` if you want inbox review without automatic local reply proposals.
 
 ## WhatsApp Cloud API
 
@@ -40,6 +47,7 @@ Configure Meta's callback URL as `https://YOUR-SECURE-ENDPOINT/api/webhooks/what
 
 - Each connector has an allowlist or authenticated account boundary.
 - External instructions enter a pending approval queue.
-- Approval creates a local planned mission and an audit entry.
+- Approval of an external instruction creates a local planned mission and an audit entry.
+- Approval of an email reply creates a Gmail draft and an audit entry. Sending remains manual.
 - Execution, sending, filing, payments, and calendar changes remain separate actions requiring their own review.
 - Connector polling is off by default. Set a polling interval only after credentials are configured.

@@ -348,10 +348,30 @@ function renderCommunications() {
     const card = el('article', undefined, `communication-item approval-${item.status}`);
     const top = el('div', undefined, 'communication-meta');
     top.append(el('span', item.connector.toUpperCase(), 'card-tag'), el('b', item.status.toUpperCase()));
-    card.append(top, el('h3', item.action.replaceAll('_', ' ')), el('p', item.detail), el('small', `REQUESTED BY ${item.requested_by || 'UNKNOWN'} · ${communicationTime(item.created)}`));
+    card.append(top, el('h3', item.action.replaceAll('_', ' ')));
+    if (item.action === 'gmail_reply_draft' && item.proposed_body) {
+      card.append(el('p', `TO: ${item.to_address}\nSUBJECT: ${item.reply_subject}`, 'reply-address'));
+      const reply = document.createElement('textarea');
+      reply.className = 'reply-editor'; reply.rows = 8; reply.value = item.proposed_body;
+      reply.disabled = item.status !== 'pending';
+      card.append(reply);
+      if (item.status === 'pending') {
+        const save = el('button', 'SAVE EDIT');
+        save.addEventListener('click', async () => {
+          try { await jsonRequest(`/api/communications/approvals/${item.id}/reply`, {body: reply.value}); await load(); show('communications'); notice('Reply proposal updated locally.'); }
+          catch (error) { notice(error.message, true); }
+        });
+        card.append(save);
+      }
+      if (item.google_draft_id) card.append(el('p', `Saved in Gmail Drafts · ${item.google_draft_id}`, 'draft-saved'));
+    } else {
+      card.append(el('p', item.detail));
+    }
+    card.append(el('small', `REQUESTED BY ${item.requested_by || 'UNKNOWN'} · ${communicationTime(item.created)}`));
     if (item.status === 'pending') {
       const actions = el('div', undefined, 'communication-actions');
-      for (const [label, status] of [['APPROVE & STAGE', 'approved'], ['REJECT', 'rejected']]) {
+      const approveLabel = item.action === 'gmail_reply_draft' ? 'APPROVE TO GMAIL DRAFT' : 'APPROVE & STAGE';
+      for (const [label, status] of [[approveLabel, 'approved'], ['REJECT', 'rejected']]) {
         const button = el('button', label, status === 'approved' ? 'primary' : 'danger');
         button.addEventListener('click', async () => {
           try { await jsonRequest(`/api/communications/approvals/${item.id}`, {status, note: `${label} in DAKSH UI`}); await load(); show('communications'); notice(`Instruction ${status}.`); }

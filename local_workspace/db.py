@@ -90,6 +90,15 @@ class Store:
               created TEXT NOT NULL, decided TEXT, decision_note TEXT NOT NULL DEFAULT '',
               FOREIGN KEY(external_message_id) REFERENCES external_messages(id) ON DELETE SET NULL
             );
+            CREATE TABLE IF NOT EXISTS email_reply_drafts(
+              id INTEGER PRIMARY KEY, scope TEXT NOT NULL, approval_id INTEGER NOT NULL UNIQUE,
+              external_message_id INTEGER NOT NULL, to_address TEXT NOT NULL,
+              subject TEXT NOT NULL, proposed_body TEXT NOT NULL,
+              status TEXT NOT NULL DEFAULT 'proposed', google_draft_id TEXT NOT NULL DEFAULT '',
+              created TEXT NOT NULL, updated TEXT NOT NULL,
+              FOREIGN KEY(approval_id) REFERENCES approval_requests(id) ON DELETE CASCADE,
+              FOREIGN KEY(external_message_id) REFERENCES external_messages(id) ON DELETE CASCADE
+            );
             CREATE TABLE IF NOT EXISTS calendar_events(
               id INTEGER PRIMARY KEY, scope TEXT NOT NULL, connector TEXT NOT NULL,
               external_id TEXT NOT NULL, title TEXT NOT NULL, starts_at TEXT NOT NULL,
@@ -105,6 +114,7 @@ class Store:
             CREATE INDEX IF NOT EXISTS chunks_scope ON chunks(scope);
             CREATE INDEX IF NOT EXISTS external_messages_scope ON external_messages(scope, received DESC);
             CREATE INDEX IF NOT EXISTS approval_requests_scope ON approval_requests(scope, status, id DESC);
+            CREATE INDEX IF NOT EXISTS email_reply_drafts_scope ON email_reply_drafts(scope, status, id DESC);
             CREATE INDEX IF NOT EXISTS calendar_events_scope ON calendar_events(scope, starts_at);
             """)
             self._add_column(con, "notes", "category", "TEXT NOT NULL DEFAULT 'business_rules'")

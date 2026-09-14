@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Authorize DAKSH's read-only Gmail and Google Calendar connection."""
+"""Authorize DAKSH's Gmail draft and read-only Google Calendar connection."""
 from __future__ import annotations
 
 import os
@@ -14,6 +14,7 @@ CLIENT_FILE = Path(os.environ.get("DAKSH_GOOGLE_CLIENT_FILE", CONNECTOR_DIR / "g
 TOKEN_FILE = Path(os.environ.get("DAKSH_GOOGLE_TOKEN_FILE", CONNECTOR_DIR / "google_token.json"))
 SCOPES = (
     "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.compose",
     "https://www.googleapis.com/auth/calendar.readonly",
 )
 
@@ -29,7 +30,7 @@ def main() -> None:
     credentials = flow.run_local_server(host="127.0.0.1", port=0, open_browser=True)
     TOKEN_FILE.write_text(credentials.to_json(), encoding="utf-8")
     os.chmod(TOKEN_FILE, 0o600)
-    print(f"DAKSH Gmail and Calendar read-only access is ready: {TOKEN_FILE}")
+    print(f"DAKSH Gmail reading/drafts and read-only Calendar access are ready: {TOKEN_FILE}")
 
 
 if __name__ == "__main__":

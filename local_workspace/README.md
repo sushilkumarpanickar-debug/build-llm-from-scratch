@@ -35,7 +35,7 @@ Open <http://127.0.0.1:9001>. The server deliberately binds only to the loopback
 - Deterministic read-only finance profiling for CSV/XLSX files, plus a local stdio MCP tool constrained to an approved finance folder.
 - A connector control plane that distinguishes built-in, optional, later, overlapping, and excluded integrations without auto-installing them.
 - A repository-scoped Codebase Memory MCP connection for structural lookup with a persistent local cache.
-- A unified Communications screen for Telegram instructions and approvals, read-only Gmail and Google Calendar imports, and signed WhatsApp Cloud API intake.
+- A unified Communications screen for Telegram instructions and approvals, local Gmail reply proposals with approved Gmail Draft creation, read-only Google Calendar imports, and signed WhatsApp Cloud API intake.
 
 Runtime data is saved under `local_workspace/data/` and excluded from Git. The SQLite database is not encrypted; rely on macOS account and disk encryption for device-level protection. Domain separation is contextual inside a single-user application, not user authentication.
 
@@ -65,7 +65,7 @@ Copy `config/mcp.example.json` into the configuration area of an MCP-compatible 
 
 Open **Messages** or **Calendar** in the left navigation to reach the unified Communications screen. The **Check Now** control polls configured Telegram, Gmail, and Google Calendar connections. WhatsApp uses a signed webhook instead of polling. Connector credentials are intentionally absent from Git; follow `COMMUNICATION_CONNECTORS.md` to connect your accounts locally.
 
-Telegram instructions and specially marked Gmail instructions enter the approval queue. Approving an item stages it as a local mission. Phase 1 does not send email, edit calendars, or execute an external instruction automatically.
+New Gmail messages receive a local Ollama reply proposal in the approval queue. You can edit it in DAKSH; approval saves it as a threaded Gmail draft and Telegram can notify you with the approval number. DAKSH has no email-send operation. Telegram, WhatsApp, and specially marked Gmail instructions use a separate approval that stages a local mission without executing it automatically.
 
 ## Safety boundary
 

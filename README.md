@@ -38,7 +38,7 @@ That produces `dist/DAKSH.app` and `dist/DAKSH-macOS-app.zip`.
 - AI Agent Hub for ChatGPT-like conversation, Codex/OpenCode-like coding, Claude-like document work, Gemini-like multimodal planning, Perplexity-like sourced research, and supervised tool orchestration.
 - JARVIS-style DAKSH command-center UI with the transparent SNNS peacock/phoenix emblem.
 - Governed connector control plane with a read-only local Finance MCP.
-- Unified Telegram, Gmail, Google Calendar, and WhatsApp connector screen with allowlists, read-only Google access, staged instructions, and human approvals.
+- Unified Telegram, Gmail, Google Calendar, and WhatsApp connector screen with allowlists, local Ollama reply proposals, approved Gmail Draft creation, read-only calendar access, staged instructions, and human approvals.
 - Codebase Memory MCP helper for token-efficient repository indexing.
 
 ## Project guides

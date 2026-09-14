@@ -5,7 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -100,6 +100,43 @@ class WorkspaceTest(unittest.TestCase):
         self.assertEqual(state["communications"]["pending_approvals"], 0)
         self.assertEqual(state["communications"]["inbox"][0]["status"], "staged")
         self.assertIn("prepare the cash report", state["tasks"][0]["plan"])
+
+    def test_gmail_reply_is_local_until_approval_then_saved_as_draft(self):
+        store = self.app.state.store
+        source = {
+            "threadId": "thread-1",
+            "payload": {"headers": [
+                {"name": "Message-ID", "value": "<original@example.com>"},
+                {"name": "References", "value": "<earlier@example.com>"},
+            ]},
+        }
+        message_id, _ = communications.record_external_message(
+            store, "Personal", "gmail", "gmail-message-1", "Vendor <vendor@example.com>",
+            "Monthly statement", "Please confirm receipt of the attached statement.",
+            "2026-09-14T00:00:00+00:00", "new", source,
+        )
+        with patch("local_workspace.communications.ollama_client.choose_chat_model", return_value="qwen-test"), \
+             patch("local_workspace.communications.ollama_client.chat", return_value="Thank you. We confirm receipt of the statement."), \
+             patch("local_workspace.communications._notify_telegram"):
+            approval_id = communications.prepare_gmail_reply(
+                store, "Personal", message_id, "Vendor <vendor@example.com>",
+                "Monthly statement", "Please confirm receipt of the attached statement.",
+            )
+        comm = communications.snapshot(store, "Personal")
+        self.assertEqual(comm["approvals"][0]["proposed_body"], "Thank you. We confirm receipt of the statement.")
+        self.assertTrue(communications.update_email_reply(store, "Personal", approval_id, "Receipt confirmed. Thank you."))
+
+        google = MagicMock()
+        google.users.return_value.drafts.return_value.create.return_value.execute.return_value = {"id": "draft-1"}
+        with patch("local_workspace.communications._google_service", return_value=google), \
+             patch("local_workspace.communications._notify_telegram"):
+            self.assertTrue(communications.decide_approval(store, "Personal", approval_id, "approved", "Approved in test"))
+        saved = store.rows("SELECT * FROM email_reply_drafts WHERE approval_id=?", (approval_id,))[0]
+        self.assertEqual(saved["status"], "saved_to_gmail")
+        self.assertEqual(saved["google_draft_id"], "draft-1")
+        create_call = google.users.return_value.drafts.return_value.create.call_args.kwargs
+        self.assertEqual(create_call["body"]["message"]["threadId"], "thread-1")
+        self.assertNotIn("send", str(google.mock_calls).lower())
 
     def test_memory_is_explicit_categorized_and_scoped(self):
         response = self.post("/api/memories", {
