@@ -12,8 +12,8 @@
     <a class="brand" href="/"><span class="brand-core" aria-hidden="true"><img src="/snns_emblem.png" alt=""></span><span>DAKSH<small>PRIVATE INTELLIGENCE</small></span></a>
     <nav aria-label="Main navigation">
       <button data-view="dashboard" class="active"><i>⌘</i>Command Center</button>
-      <button data-view="dashboard"><i>◉</i>AI Core</button>
-      <button data-view="tasks"><i>◇</i>Agents</button>
+      <button data-view="agent-hub"><i>◉</i>AI Agent Hub</button>
+      <button data-view="tasks"><i>◇</i>Missions</button>
       <button data-view="tasks"><i>▣</i>Tasks <b id="nav-task-count">0</b></button>
       <button data-view="dashboard" data-message="Calendar connection is planned for a later phase."><i>▤</i>Calendar</button>
       <button data-view="knowledge"><i>▱</i>Memory</button>
@@ -47,8 +47,8 @@
             <button data-view="settings"><i class="cyan">◉</i><span>Core<b id="overview-core">Active</b></span></button>
             <button data-view="knowledge"><i class="blue">▱</i><span>Memory<b id="overview-memory">0 stored</b></span></button>
             <button id="overview-voice-button"><i class="green">◖</i><span>Voice<b id="overview-voice">Ready</b></span></button>
-            <button data-view="tasks"><i class="violet">◇</i><span>Agents<b id="overview-agents">Local planning</b></span></button>
-            <button data-view="settings"><i class="amber">◉</i><span>LLMs<b id="overview-models">0 connected</b></span></button>
+            <button data-view="agent-hub"><i class="violet">◇</i><span>Agents<b id="overview-agents">Local planning</b></span></button>
+            <button data-view="agent-hub"><i class="amber">◉</i><span>LLMs<b id="overview-models">0 connected</b></span></button>
             <button data-view="settings"><i class="green">✓</i><span>System<b>Local only</b></span></button>
           </div>
         </article>
@@ -81,7 +81,7 @@
           <button data-view="tasks"><i>＋</i> Start New Task</button>
           <button data-view="finance"><i>₹</i> Analyse Finance File</button>
           <button id="quick-voice"><i>♬</i> Start Voice Chat</button>
-          <button data-view="tasks"><i>▷</i> Run Workflow</button>
+          <button data-view="agent-hub"><i>▷</i> Open AI Agent Hub</button>
         </article>
 
         <article class="hud-card system-monitor">
@@ -116,6 +116,21 @@
     <section id="tasks" class="view" hidden>
       <div class="page-intro"><div><span>MISSIONS &amp; AGENTS</span><h1>Convert intent into an inspectable plan.</h1></div><p>Phase 1 plans and tracks; you control execution.</p></div>
       <form id="task-form" class="task-form"><input id="task-prompt" maxlength="8000" required placeholder="State the outcome, constraints and deadline…"><button class="primary">GENERATE PLAN</button></form><div id="task-list" class="cards task-grid"></div>
+    </section>
+
+    <section id="agent-hub" class="view" hidden>
+      <div class="page-intro"><div><span>AI AGENT HUB</span><h1>One local control center for every AI work mode.</h1></div><p>DAKSH defaults to free local models. Hosted agents stay optional and disabled until you connect them for a specific job.</p></div>
+      <article class="hud-card form-card"><div class="card-head"><span>FREE / LOCAL FIRST POLICY</span><b>OLLAMA + LOCAL TOOLS</b></div><div class="cards task-grid"><article class="card"><span class="card-tag">COST</span><h3>Mostly free by default</h3><p>Local Ollama routes handle normal chat, document work, memory, planning, coding support and finance profiling before any optional hosted connector is considered.</p></article><article class="card"><span class="card-tag">PRIVACY</span><h3>Private Mac workspace</h3><p>Your documents, memories, business records and local database stay on this Mac unless you later enable a specific external connector for a specific job.</p></article></div></article>
+      <div class="cards task-grid">
+        <article class="card"><span class="card-tag">ACTIVE · LOCAL</span><h3>Conversation Brain</h3><p>ChatGPT-style conversation through a free local Ollama model with scoped SQLite memory and document-aware answers.</p></article>
+        <article class="card"><span class="card-tag">ACTIVE · LOCAL</span><h3>Code &amp; Repo Agent</h3><p>Codex/OpenCode-style repository work: inspect files, prepare changes, run tests, keep commits and GitHub PRs reviewable.</p></article>
+        <article class="card"><span class="card-tag">ACTIVE · LOCAL</span><h3>Long Document Reasoner</h3><p>Claude-style document handling for PDF, DOCX, XLSX, CSV, TXT and Markdown using source-aware local RAG.</p></article>
+        <article class="card"><span class="card-tag">PLANNED · LOCAL</span><h3>Vision &amp; Multimodal Desk</h3><p>Gemini-style image, screenshot, chart and visual document understanding once a suitable local vision model is selected.</p></article>
+        <article class="card"><span class="card-tag">PLANNED · OPTIONAL</span><h3>Research Answer Engine</h3><p>Perplexity-style public-web research with citations through optional Fetch or Parallel Search MCP, separated from private documents.</p></article>
+        <article class="card"><span class="card-tag">PLANNED · SUPERVISED</span><h3>Operator Orchestrator</h3><p>JARVIS-style tool control for filesystem, browser, calendar, email, finance and workflows through allowlisted MCP tools and approvals.</p></article>
+        <article class="card"><span class="card-tag">ACTIVE · LOCAL</span><h3>Finance &amp; Business Analyst</h3><p>Deterministic CSV/XLSX profiling and read-only finance MCP support for ledgers, cash-flow files and business calculations.</p></article>
+        <article class="card"><span class="card-tag">ACTIVE · LOCAL</span><h3>Mission Planner</h3><p>Break broad instructions into staged mission plans with deliverables, checks and clear next actions.</p></article>
+      </div>
     </section>
 
     <section id="finance" class="view" hidden>

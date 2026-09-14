@@ -10,3 +10,7 @@ local_workspace/tmp/
 *.sqlite3
 *.sqlite3-*
 .DS_Store
+dist/
+macos/DAKSH/build/
+macos/DAKSH/DAKSH/AppIcon.icns
+macos/DAKSH/DAKSH/AppIcon.iconset/
