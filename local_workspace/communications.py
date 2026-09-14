@@ -40,6 +40,15 @@ GOOGLE_SCOPES = (
 )
 APPROVAL_RE = re.compile(r"^\s*/?(approve|approved|reject|rejected|deny)\s+#?(\d+)\b(?:\s+(.+))?", re.I)
 COMMAND_RE = re.compile(r"^\s*/(?:daksh|task|mission)\s+(.+)", re.I | re.S)
+AUTOMATED_MAILBOX_RE = re.compile(
+    r"^(?:no-?reply|do-?not-?reply|donotreply|mailer-daemon|postmaster|notifications?|alerts?)$",
+    re.I,
+)
+SECURITY_SUBJECT_RE = re.compile(
+    r"\b(?:security alert|verification code|one[- ]time password|password reset|new sign[- ]in|"
+    r"personal access token|suspicious activity)\b",
+    re.I,
+)
 
 
 class ConnectorUnavailable(RuntimeError):
@@ -466,6 +475,26 @@ def _gmail_body(payload: dict[str, Any]) -> str:
     return content[:20000]
 
 
+def gmail_reply_eligible(sender: str, subject: str, headers: dict[str, str] | None = None) -> tuple[bool, str]:
+    """Return whether an imported message is safe to place in the reply-approval queue."""
+    headers = {str(key).lower(): str(value) for key, value in (headers or {}).items()}
+    address = parseaddr(sender)[1].strip().lower()
+    local_part = address.split("@", 1)[0] if "@" in address else ""
+    if not address:
+        return False, "missing_sender_address"
+    if AUTOMATED_MAILBOX_RE.fullmatch(local_part):
+        return False, "automated_or_no_reply_sender"
+    if headers.get("auto-submitted", "").strip().lower() not in {"", "no"}:
+        return False, "auto_submitted_message"
+    if headers.get("precedence", "").strip().lower() in {"bulk", "junk", "list"}:
+        return False, "bulk_or_list_message"
+    if headers.get("list-id") or headers.get("list-unsubscribe"):
+        return False, "mailing_list_message"
+    if SECURITY_SUBJECT_RE.search(subject or ""):
+        return False, "security_or_credential_notice"
+    return True, "replyable"
+
+
 def prepare_gmail_reply(store, scope: str, message_id: int, sender: str, subject: str, body: str) -> int:
     model = ollama_client.choose_chat_model(store.setting(scope, "model"))
     if not model:
@@ -525,6 +554,7 @@ def poll_gmail(store, scope: str) -> dict[str, Any]:
     imported = 0
     instructions = 0
     replies = 0
+    reply_skipped = 0
     draft_errors = 0
     for item in reversed(response.get("messages", [])):
         message = service.users().messages().get(
@@ -544,17 +574,22 @@ def poll_gmail(store, scope: str) -> dict[str, Any]:
             if instruction:
                 _create_approval(store, scope, "gmail", message_id, "email_instruction", instruction, sender)
                 instructions += 1
-            if sender and body and _env_bool("DAKSH_GMAIL_AUTO_DRAFT", True):
+            eligible, skip_reason = gmail_reply_eligible(sender, subject, headers)
+            if sender and body and eligible and _env_bool("DAKSH_GMAIL_AUTO_DRAFT", True):
                 try:
                     prepare_gmail_reply(store, scope, message_id, sender, subject, body)
                     replies += 1
                 except Exception as exc:
                     draft_errors += 1
                     store.audit(scope, "gmail_reply_draft_error", f"message {message_id}; {str(exc)[:400]}")
+            elif sender and body and _env_bool("DAKSH_GMAIL_AUTO_DRAFT", True):
+                reply_skipped += 1
+                store.audit(scope, "gmail_reply_skipped", f"message {message_id}; {skip_reason}")
     _set_connector_state(store, "gmail", "last_checked", utcnow())
     return {
         "connector": "gmail", "imported": imported, "instructions": instructions,
-        "reply_proposals": replies, "draft_errors": draft_errors, "query": query,
+        "reply_proposals": replies, "reply_skipped": reply_skipped,
+        "draft_errors": draft_errors, "query": query,
     }
 
 

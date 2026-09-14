@@ -12,7 +12,7 @@ final class DAKSHRuntime: ObservableObject {
     @Published var detailLine = "Checking repository, GitHub branch, virtual environment, and local server."
     @Published var reloadID = UUID()
 
-    private let branch = "codex/daksh-local-workspace"
+    private let branch = "main"
     private let defaultRepositoryPath = "/Users/mayanagari/Documents/Codex/2026-09-13/mak/work/build-llm-from-scratch"
     private var repositoryPath: String
     private var serverProcess: Process?

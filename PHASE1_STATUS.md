@@ -23,6 +23,8 @@ Status reviewed: 14 September 2026.
 - The native DAKSH app received microphone permission and entered continuous listening mode.
 - Pull request #2 was reviewed as mergeable and squash-merged into `main` as commit `f1fbadbc487c60c0cd3d9c071d2227796cf96083`.
 - The local checkout now follows the merged `main` branch, and the repository watcher follows `main`.
+- Gmail and Google Calendar OAuth are connected on this Mac. Three unread messages were imported and one threaded Gmail Draft was created and verified without sending.
+- Automated, bulk, no-reply, mailing-list, security, password, and credential notices are excluded from automatic reply proposals.
 
 ## Remaining before Phase 1 is operational on the user's accounts
 

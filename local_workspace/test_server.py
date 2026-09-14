@@ -56,7 +56,11 @@ class WorkspaceTest(unittest.TestCase):
     def test_communications_intake_approval_and_task_staging(self):
         state = self.client.get("/api/state").json()
         self.assertEqual(state["communications"]["pending_approvals"], 0)
-        checked = self.post("/api/communications/poll", {"scope": "Personal"})
+        unavailable = communications.ConnectorUnavailable("Connector intentionally disabled in isolated test")
+        with patch("local_workspace.communications.poll_telegram", side_effect=unavailable), \
+             patch("local_workspace.communications.poll_gmail", side_effect=unavailable), \
+             patch("local_workspace.communications.poll_calendar", side_effect=unavailable):
+            checked = self.post("/api/communications/poll", {"scope": "Personal"})
         self.assertEqual(checked.status_code, 200)
         self.assertTrue(all(item.get("skipped") for item in checked.json()["results"]))
 
@@ -137,6 +141,22 @@ class WorkspaceTest(unittest.TestCase):
         create_call = google.users.return_value.drafts.return_value.create.call_args.kwargs
         self.assertEqual(create_call["body"]["message"]["threadId"], "thread-1")
         self.assertNotIn("send", str(google.mock_calls).lower())
+
+    def test_automated_and_security_email_do_not_enter_reply_queue(self):
+        cases = [
+            ("Google <no-reply@accounts.google.com>", "Security alert", {}, "automated_or_no_reply_sender"),
+            ("Updates <news@example.com>", "Weekly update", {"List-Unsubscribe": "<https://example.com/unsubscribe>"}, "mailing_list_message"),
+            ("GitHub <security@github.com>", "A personal access token has been added", {}, "security_or_credential_notice"),
+        ]
+        for sender, subject, headers, reason in cases:
+            with self.subTest(sender=sender, subject=subject):
+                eligible, actual_reason = communications.gmail_reply_eligible(sender, subject, headers)
+                self.assertFalse(eligible)
+                self.assertEqual(actual_reason, reason)
+        self.assertEqual(
+            communications.gmail_reply_eligible("Accounts <accounts@vendor.example>", "Monthly statement", {})[0],
+            True,
+        )
 
     def test_memory_is_explicit_categorized_and_scoped(self):
         response = self.post("/api/memories", {
