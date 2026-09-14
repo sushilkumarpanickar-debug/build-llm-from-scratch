@@ -26,6 +26,8 @@ DAKSH requests `gmail.readonly`, `gmail.compose`, and `calendar.readonly`. It ha
 
 For every newly imported inbox message, DAKSH reads the text body and asks the selected local Ollama model to prepare a concise reply without inventing facts or commitments. The proposal remains local and editable in the Approval Queue. If Telegram is configured, the bot sends the sender, subject, and approval number. `/approve 12` or the app's **Approve to Gmail Draft** button creates a threaded Gmail draft; `/reject 12` keeps it out of Gmail. You review and send the final email manually in Gmail.
 
+DAKSH imports automated notices for awareness but does not prepare reply proposals for no-reply mailboxes, mailing lists, bulk messages, password or verification notices, security alerts, or credential-change notifications.
+
 Email and draft content is not copied into Telegram by default. Set `DAKSH_TELEGRAM_EMAIL_PREVIEW=true` only if you intentionally want the reply preview transmitted to your allowed Telegram chat.
 
 A Gmail subject beginning `[DAKSH]`, or a body beginning `/daksh`, `/task`, or `/mission`, also creates a mission-instruction approval. Set `DAKSH_GMAIL_AUTO_DRAFT=false` if you want inbox review without automatic local reply proposals.
