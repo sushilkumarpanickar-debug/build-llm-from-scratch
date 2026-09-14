@@ -1,6 +1,6 @@
 # DAKSH Phase 1 status
 
-Status reviewed: 14 September 2026.
+Status reviewed: 15 September 2026.
 
 ## Completed in the application
 
@@ -25,14 +25,12 @@ Status reviewed: 14 September 2026.
 - The local checkout now follows the merged `main` branch, and the repository watcher follows `main`.
 - Gmail and Google Calendar OAuth are connected on this Mac. Three unread messages were imported and one threaded Gmail Draft was created and verified without sending.
 - Automated, bulk, no-reply, mailing-list, security, password, and credential notices are excluded from automatic reply proposals.
+- The private Telegram bot token and one allowed private chat are configured in the protected local `.env`. The bot was verified, two real messages were imported, and a live confirmation message was delivered back to the authorized chat.
 
 ## Remaining before Phase 1 is operational on the user's accounts
 
-1. Create or select the Telegram bot and record its private token plus the user's allowed chat ID in the local `.env`.
-2. Create the Google Desktop OAuth client, enable Gmail and Calendar APIs, run `scripts/setup_google_connectors.py`, and approve the Gmail read/compose and Calendar read-only scopes.
-3. Test one real incoming email through proposal, Telegram/app approval, and Gmail Draft creation. Sending remains a manual Gmail action.
-4. Configure the optional Meta WhatsApp Cloud API, signed HTTPS webhook, and allowed numbers, or formally defer WhatsApp because Meta setup and possible message charges are outside the local/free core.
-5. Speak one live instruction in the already-authorized native voice session and confirm the spoken reply. The local transcription and speech engines have passed independent live tests.
+1. Configure the optional Meta WhatsApp Cloud API, signed HTTPS webhook, and allowed numbers, or formally defer WhatsApp because Meta setup and possible message charges are outside the local/free core.
+2. Speak one live instruction in the already-authorized native voice session and confirm the spoken reply. The local transcription and speech engines have passed independent live tests.
 
 ## Later-phase work
 
