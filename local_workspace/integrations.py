@@ -1,6 +1,7 @@
 """Governed DAKSH connector catalog. Catalog entries never auto-install software."""
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -8,10 +9,22 @@ from pathlib import Path
 CBM_BINARY = Path("/Users/mayanagari/Documents/Codex/2026-09-07/we-x20/work/pilot/runtime/cbm/codebase-memory-mcp")
 
 
+def _has_env(name):
+    return bool(os.environ.get(name, '').strip())
+
+
+def _has_csv_env(name):
+    return any(item.strip() for item in os.environ.get(name, '').split(','))
+
+
 CATALOG = (
     {"id": "daksh-finance", "name": "DAKSH Finance MCP", "decision": "built_now", "access": "read-only", "cost": "free", "description": "Allowlisted local CSV/XLSX profiling with deterministic totals.", "available": lambda: True},
     {"id": "codebase-memory", "name": "Codebase Memory MCP", "decision": "built_now", "access": "this repository only", "cost": "free/local", "description": "Pinned v0.10.8 structural code graph with project-local cache and analysis-only tools.", "available": lambda: CBM_BINARY.is_file()},
     {"id": "ollama", "name": "Ollama local models", "decision": "built_now", "access": "local inference", "cost": "no API tokens", "description": "Default model route for private chat, RAG, and routine reasoning on this Mac.", "available": lambda: bool(shutil.which("ollama"))},
+    {"id": "telegram", "name": "Telegram Bot Instructions", "decision": "ready_when_configured", "access": "allowed chat IDs", "cost": "free", "description": "Receives DAKSH instructions and approval/rejection commands through a Telegram bot allowlist.", "available": lambda: _has_env("DAKSH_TELEGRAM_BOT_TOKEN") and _has_csv_env("DAKSH_TELEGRAM_ALLOWED_CHATS")},
+    {"id": "gmail", "name": "Gmail Read-only Inbox", "decision": "ready_when_configured", "access": "Google OAuth read-only", "cost": "free quota", "description": "Imports recent Gmail inbox metadata/snippets and recognizes [DAKSH] or /daksh messages as instructions.", "available": lambda: Path(os.environ.get("DAKSH_GOOGLE_TOKEN_FILE", Path(__file__).resolve().parent / "data" / "connectors" / "google_token.json")).is_file()},
+    {"id": "google-calendar", "name": "Google Calendar Agenda", "decision": "ready_when_configured", "access": "Google OAuth read-only", "cost": "free quota", "description": "Imports upcoming calendar events for DAKSH planning and reminders.", "available": lambda: Path(os.environ.get("DAKSH_GOOGLE_TOKEN_FILE", Path(__file__).resolve().parent / "data" / "connectors" / "google_token.json")).is_file()},
+    {"id": "whatsapp", "name": "WhatsApp Cloud Webhook", "decision": "setup_required", "access": "Meta webhook allowlist", "cost": "Meta pricing may apply", "description": "Records official WhatsApp webhook messages only after Meta Business credentials and explicit external webhook exposure are configured.", "available": lambda: _has_env("DAKSH_WHATSAPP_VERIFY_TOKEN") and _has_csv_env("DAKSH_WHATSAPP_ALLOWED_NUMBERS") and _has_env("DAKSH_ALLOW_EXTERNAL_WEBHOOKS")},
     {"id": "gnucash", "name": "GnuCash MCP", "decision": "optional", "access": "read-only first", "cost": "free", "description": "Useful only after a SQLite-format GnuCash book is selected and backed up.", "available": lambda: bool(shutil.which("gnucash"))},
     {"id": "git", "name": "Git MCP", "decision": "optional", "access": "repository scoped", "cost": "free", "description": "Useful for repo diffs and history; DAKSH already has project Git workflows.", "available": lambda: bool(shutil.which("git"))},
     {"id": "opencode", "name": "OpenCode / Zen", "decision": "optional", "access": "repository plus selected provider", "cost": "local or changing free tiers", "description": "Use as a separate coding agent. Free hosted offers can change and are not the private default.", "available": lambda: bool(shutil.which("opencode"))},

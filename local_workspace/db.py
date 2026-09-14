@@ -71,11 +71,41 @@ class Store:
               id INTEGER PRIMARY KEY, scope TEXT NOT NULL, event TEXT NOT NULL,
               detail TEXT NOT NULL, created TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS connector_state(
+              connector TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL,
+              updated TEXT NOT NULL, PRIMARY KEY(connector, key)
+            );
+            CREATE TABLE IF NOT EXISTS external_messages(
+              id INTEGER PRIMARY KEY, scope TEXT NOT NULL, connector TEXT NOT NULL,
+              external_id TEXT NOT NULL, sender TEXT NOT NULL DEFAULT '',
+              subject TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '',
+              received TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'new',
+              raw_json TEXT NOT NULL DEFAULT '{}', created TEXT NOT NULL,
+              UNIQUE(connector, external_id)
+            );
+            CREATE TABLE IF NOT EXISTS approval_requests(
+              id INTEGER PRIMARY KEY, scope TEXT NOT NULL, connector TEXT NOT NULL,
+              external_message_id INTEGER, action TEXT NOT NULL, detail TEXT NOT NULL,
+              status TEXT NOT NULL, requested_by TEXT NOT NULL DEFAULT '',
+              created TEXT NOT NULL, decided TEXT, decision_note TEXT NOT NULL DEFAULT '',
+              FOREIGN KEY(external_message_id) REFERENCES external_messages(id) ON DELETE SET NULL
+            );
+            CREATE TABLE IF NOT EXISTS calendar_events(
+              id INTEGER PRIMARY KEY, scope TEXT NOT NULL, connector TEXT NOT NULL,
+              external_id TEXT NOT NULL, title TEXT NOT NULL, starts_at TEXT NOT NULL,
+              ends_at TEXT NOT NULL DEFAULT '', location TEXT NOT NULL DEFAULT '',
+              link TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'confirmed',
+              raw_json TEXT NOT NULL DEFAULT '{}', created TEXT NOT NULL, updated TEXT NOT NULL,
+              UNIQUE(connector, external_id)
+            );
             CREATE INDEX IF NOT EXISTS notes_scope ON notes(scope);
             CREATE INDEX IF NOT EXISTS conversations_scope ON conversations(scope, updated DESC);
             CREATE INDEX IF NOT EXISTS tasks_scope ON tasks(scope);
             CREATE INDEX IF NOT EXISTS documents_scope ON documents(scope, id DESC);
             CREATE INDEX IF NOT EXISTS chunks_scope ON chunks(scope);
+            CREATE INDEX IF NOT EXISTS external_messages_scope ON external_messages(scope, received DESC);
+            CREATE INDEX IF NOT EXISTS approval_requests_scope ON approval_requests(scope, status, id DESC);
+            CREATE INDEX IF NOT EXISTS calendar_events_scope ON calendar_events(scope, starts_at);
             """)
             self._add_column(con, "notes", "category", "TEXT NOT NULL DEFAULT 'business_rules'")
             self._add_column(con, "messages", "conversation_id", "INTEGER")

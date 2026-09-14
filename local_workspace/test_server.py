@@ -1,4 +1,7 @@
 import io
+import hashlib
+import hmac
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from openpyxl import Workbook
 
-from local_workspace import finance, finance_mcp, ingestion
+from local_workspace import communications, finance, finance_mcp, ingestion
 from local_workspace.server import TOKEN, create_app
 
 
@@ -43,10 +46,60 @@ class WorkspaceTest(unittest.TestCase):
         self.assertIn("COGNITIVE CORE", page.text)
         self.assertIn("FINANCE INTELLIGENCE", page.text)
         self.assertIn("MCP &amp; CONNECTOR CONTROL PLANE", page.text)
+        self.assertIn("COMMUNICATIONS BRIDGE", page.text)
+        self.assertIn("APPROVAL QUEUE", page.text)
         self.assertEqual(self.client.get("/snns_logo.png").content[:8], b"\x89PNG\r\n\x1a\n")
         self.assertEqual(self.client.get("/snns_emblem.png").content[:8], b"\x89PNG\r\n\x1a\n")
         self.assertTrue(self.client.get("/api/health").json()["local_only"])
         self.assertEqual(self.client.get("/api/state", headers={"Host": "evil.example"}).status_code, 403)
+
+    def test_communications_intake_approval_and_task_staging(self):
+        state = self.client.get("/api/state").json()
+        self.assertEqual(state["communications"]["pending_approvals"], 0)
+        checked = self.post("/api/communications/poll", {"scope": "Personal"})
+        self.assertEqual(checked.status_code, 200)
+        self.assertTrue(all(item.get("skipped") for item in checked.json()["results"]))
+
+        payload = {
+            "entry": [{"changes": [{"value": {
+                "contacts": [{"wa_id": "919900001111", "profile": {"name": "Owner"}}],
+                "messages": [{
+                    "id": "wamid.test-1", "from": "919900001111", "timestamp": "1789320000",
+                    "type": "text", "text": {"body": "/daksh prepare the cash report"},
+                }],
+            }}]}],
+        }
+        body = json.dumps(payload, separators=(",", ":")).encode()
+        secret = "test-app-secret"
+        signature = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        connector_env = {
+            "DAKSH_WHATSAPP_VERIFY_TOKEN": "verify-me",
+            "DAKSH_WHATSAPP_APP_SECRET": secret,
+            "DAKSH_WHATSAPP_ALLOWED_NUMBERS": "919900001111",
+        }
+        with patch.dict("os.environ", connector_env, clear=False):
+            verified = self.client.get(
+                "/api/webhooks/whatsapp",
+                params={"hub.mode": "subscribe", "hub.verify_token": "verify-me", "hub.challenge": "accepted"},
+            )
+            self.assertEqual(verified.text, "accepted")
+            rejected = self.client.post("/api/webhooks/whatsapp", content=body)
+            self.assertEqual(rejected.status_code, 403)
+            received = self.client.post(
+                "/api/webhooks/whatsapp", content=body,
+                headers={"Content-Type": "application/json", "X-Hub-Signature-256": signature},
+            )
+        self.assertEqual(received.status_code, 200, received.text)
+        comm = self.client.get("/api/communications?scope=Personal").json()
+        self.assertEqual(comm["unread_messages"], 1)
+        self.assertEqual(comm["pending_approvals"], 1)
+        approval_id = comm["approvals"][0]["id"]
+        approved = self.post(f"/api/communications/approvals/{approval_id}", {"scope": "Personal", "status": "approved"})
+        self.assertEqual(approved.status_code, 200, approved.text)
+        state = self.client.get("/api/state?scope=Personal").json()
+        self.assertEqual(state["communications"]["pending_approvals"], 0)
+        self.assertEqual(state["communications"]["inbox"][0]["status"], "staged")
+        self.assertIn("prepare the cash report", state["tasks"][0]["plan"])
 
     def test_memory_is_explicit_categorized_and_scoped(self):
         response = self.post("/api/memories", {

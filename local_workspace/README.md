@@ -35,6 +35,7 @@ Open <http://127.0.0.1:9001>. The server deliberately binds only to the loopback
 - Deterministic read-only finance profiling for CSV/XLSX files, plus a local stdio MCP tool constrained to an approved finance folder.
 - A connector control plane that distinguishes built-in, optional, later, overlapping, and excluded integrations without auto-installing them.
 - A repository-scoped Codebase Memory MCP connection for structural lookup with a persistent local cache.
+- A unified Communications screen for Telegram instructions and approvals, read-only Gmail and Google Calendar imports, and signed WhatsApp Cloud API intake.
 
 Runtime data is saved under `local_workspace/data/` and excluded from Git. The SQLite database is not encrypted; rely on macOS account and disk encryption for device-level protection. Domain separation is contextual inside a single-user application, not user authentication.
 
@@ -59,6 +60,12 @@ Tests use temporary databases and mocked model output. Live validation additiona
 ## Local finance MCP
 
 Copy `config/mcp.example.json` into the configuration area of an MCP-compatible client and replace `DAKSH_FINANCE_ROOT` with one folder that DAKSH may read. The server exposes only `finance_analyze_file`; it accepts CSV/XLSX, refuses paths outside that folder, and never edits the source. See `MCP_AND_SKILLS_REVIEW.md` for the connector decisions and boundaries.
+
+## Communications
+
+Open **Messages** or **Calendar** in the left navigation to reach the unified Communications screen. The **Check Now** control polls configured Telegram, Gmail, and Google Calendar connections. WhatsApp uses a signed webhook instead of polling. Connector credentials are intentionally absent from Git; follow `COMMUNICATION_CONNECTORS.md` to connect your accounts locally.
+
+Telegram instructions and specially marked Gmail instructions enter the approval queue. Approving an item stages it as a local mission. Phase 1 does not send email, edit calendars, or execute an external instruction automatically.
 
 ## Safety boundary
 

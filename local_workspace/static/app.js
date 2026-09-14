@@ -62,7 +62,7 @@ function show(name, message = '', trigger = null) {
 function render() {
   renderModels(); renderConversations(); renderMessages(); renderNotes();
   renderDocuments(); renderTasks(); renderSettings(); renderDashboard(); renderCapabilities();
-  renderIntegrations();
+  renderIntegrations(); renderCommunications();
 }
 
 function renderModels() {
@@ -198,9 +198,11 @@ function renderDashboard() {
   const readyDocs = state.documents.filter(item => item.status === 'ready');
   const openTasks = state.tasks.filter(item => item.status !== 'completed');
   const modelCount = state.models.length;
+  const comm = state.communications || {inbox: [], approvals: [], calendar: [], pending_approvals: 0, unread_messages: 0};
   const coreOnline = health.status === 'ready' || modelCount > 0;
   $('nav-task-count').textContent = openTasks.length;
   $('nav-chat-count').textContent = state.conversations.length;
+  $('nav-message-count').textContent = comm.unread_messages + comm.pending_approvals;
   $('overview-core').textContent = coreOnline ? 'Active' : 'Limited';
   $('overview-memory').textContent = `${state.notes.length} stored`;
   $('overview-voice').textContent = health.transcription ? 'Ready' : 'Offline';
@@ -223,6 +225,7 @@ function renderDashboard() {
   addFeed('▱', 'Knowledge index', `${readyDocs.length} files ready for retrieval`, readyDocs.length ? 'READY' : 'EMPTY', !readyDocs.length);
   addFeed('◇', 'Mission queue', `${openTasks.length} open · ${state.tasks.length} total`, openTasks.length ? 'ACTIVE' : 'CLEAR');
   addFeed('◖', 'Voice interface', health.transcription ? 'Faster-Whisper running locally' : 'Transcription dependency unavailable', health.transcription ? 'READY' : 'OFFLINE', !health.transcription);
+  addFeed('⌁', 'Communications bridge', `${comm.unread_messages} unread · ${comm.pending_approvals} approvals`, comm.pending_approvals ? 'REVIEW' : 'READY', comm.pending_approvals > 0);
   addFeed('✓', 'Privacy boundary', health.local_only ? 'Bound to this Mac only' : 'Review server binding', health.local_only ? 'LOCAL' : 'CHECK', !health.local_only);
 
   $('agent-grid').replaceChildren();
@@ -232,6 +235,7 @@ function renderDashboard() {
   addAgent('◇', 'Mission Planner', `${openTasks.length} open`, modelCount ? 'standby' : 'offline');
   addAgent('◉', 'System Agent', health.database ? 'SQLite online' : 'Database offline', health.database ? '' : 'offline');
   addAgent('₹', 'Finance Agent', health.finance ? 'Read-only ready' : 'Unavailable', health.finance ? '' : 'offline');
+  addAgent('⌁', 'Message Agent', `${comm.unread_messages} unread`, health.communications ? '' : 'offline');
 
   $('timeline').replaceChildren();
   const events = state.tasks.slice(0, 3).map(task => ({time: new Date(task.created).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}), title: task.title, status: task.status.replace('_', ' ')}));
@@ -270,6 +274,7 @@ function renderCapabilities() {
     ['Persistent workspace', health.database ? 'SQLITE READY' : 'OFFLINE', !!health.database],
     ['Deterministic finance skill', health.finance ? 'CSV / XLSX READY' : 'OFFLINE', !!health.finance],
     ['DAKSH Finance MCP', health.mcp_finance ? 'STDIO READY' : 'OFFLINE', !!health.mcp_finance],
+    ['Communications bridge', health.communications ? 'INBOX / APPROVALS READY' : 'OFFLINE', !!health.communications],
     ['Network boundary', health.local_only ? '127.0.0.1 ONLY' : 'CHECK REQUIRED', !!health.local_only]
   ];
   entries.forEach(([name, status, live]) => {
@@ -287,6 +292,87 @@ function renderIntegrations() {
     top.append(el('strong', item.name), el('b', item.decision.replace('_', ' ').toUpperCase()));
     card.append(top, el('p', item.description), el('small', `${item.access} · ${item.cost} · ${item.installed ? 'available on this Mac' : 'not active'}`));
     root.append(card);
+  });
+}
+
+function communicationTime(value) {
+  if (!value) return 'TIME UNKNOWN';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'});
+}
+
+function renderCommunications() {
+  const comm = state.communications || {connectors: [], inbox: [], approvals: [], calendar: [], pending_approvals: 0, unread_messages: 0};
+  $('approval-summary').textContent = `${comm.pending_approvals} PENDING`;
+  $('inbox-summary').textContent = `${comm.unread_messages} NEW`;
+
+  const connectors = $('communication-connectors');
+  connectors.replaceChildren();
+  comm.connectors.forEach(item => {
+    const card = el('article', undefined, `communication-connector ${item.configured ? 'online' : ''}`);
+    const copy = el('span');
+    copy.append(el('strong', item.name), el('small', item.detail));
+    card.append(el('i', item.configured ? '●' : '○'), copy, el('b', item.configured ? 'READY' : 'SETUP'));
+    connectors.append(card);
+  });
+
+  const inbox = $('communication-inbox');
+  inbox.replaceChildren();
+  if (!comm.inbox.length) inbox.append(el('p', 'No connector messages have been imported.', 'muted'));
+  comm.inbox.forEach(item => {
+    const card = el('article', undefined, `communication-item ${item.status}`);
+    const top = el('div', undefined, 'communication-meta');
+    top.append(el('span', item.connector.toUpperCase(), 'card-tag'), el('time', communicationTime(item.received)));
+    const actions = el('div', undefined, 'communication-actions');
+    const stage = el('button', item.status === 'staged' ? 'MISSION STAGED' : 'STAGE MISSION');
+    stage.disabled = item.status === 'staged';
+    stage.addEventListener('click', async () => {
+      try { const result = await jsonRequest(`/api/communications/messages/${item.id}/task`, {}); await load(); show('tasks'); notice(`Mission ${result.task_id} staged from ${item.connector}.`); }
+      catch (error) { notice(error.message, true); }
+    });
+    const reviewed = el('button', 'MARK REVIEWED');
+    reviewed.disabled = item.status === 'reviewed' || item.status === 'archived';
+    reviewed.addEventListener('click', async () => {
+      try { await jsonRequest(`/api/communications/messages/${item.id}/status`, {status: 'reviewed'}); await load(); show('communications'); }
+      catch (error) { notice(error.message, true); }
+    });
+    actions.append(stage, reviewed);
+    card.append(top, el('h3', item.subject || `${item.connector} message`), el('p', item.body), el('small', `FROM ${item.sender || 'UNKNOWN'} · ${item.status.toUpperCase()}`), actions);
+    inbox.append(card);
+  });
+
+  const approvals = $('communication-approvals');
+  approvals.replaceChildren();
+  if (!comm.approvals.length) approvals.append(el('p', 'No external instructions are waiting for approval.', 'muted'));
+  comm.approvals.forEach(item => {
+    const card = el('article', undefined, `communication-item approval-${item.status}`);
+    const top = el('div', undefined, 'communication-meta');
+    top.append(el('span', item.connector.toUpperCase(), 'card-tag'), el('b', item.status.toUpperCase()));
+    card.append(top, el('h3', item.action.replaceAll('_', ' ')), el('p', item.detail), el('small', `REQUESTED BY ${item.requested_by || 'UNKNOWN'} · ${communicationTime(item.created)}`));
+    if (item.status === 'pending') {
+      const actions = el('div', undefined, 'communication-actions');
+      for (const [label, status] of [['APPROVE & STAGE', 'approved'], ['REJECT', 'rejected']]) {
+        const button = el('button', label, status === 'approved' ? 'primary' : 'danger');
+        button.addEventListener('click', async () => {
+          try { await jsonRequest(`/api/communications/approvals/${item.id}`, {status, note: `${label} in DAKSH UI`}); await load(); show('communications'); notice(`Instruction ${status}.`); }
+          catch (error) { notice(error.message, true); }
+        });
+        actions.append(button);
+      }
+      card.append(actions);
+    }
+    approvals.append(card);
+  });
+
+  const calendar = $('communication-calendar');
+  calendar.replaceChildren();
+  if (!comm.calendar.length) calendar.append(el('p', 'No upcoming Google Calendar events have been imported.', 'muted'));
+  comm.calendar.forEach(item => {
+    const card = el('article', undefined, 'communication-item calendar-item');
+    card.append(el('time', communicationTime(item.starts_at), 'calendar-time'), el('h3', item.title));
+    if (item.location) card.append(el('p', item.location));
+    card.append(el('small', `${item.status.toUpperCase()} · ${item.connector.replaceAll('_', ' ').toUpperCase()}`));
+    calendar.append(card);
   });
 }
 
@@ -632,6 +718,19 @@ $('settings-form').addEventListener('submit', async event => {
     await jsonRequest('/api/settings', {model: $('settings-model').value, embedding_model: $('embedding-model').value, stt_model: $('stt-model').value, speech_enabled: String($('speech-enabled').checked)});
     await load(state.conversation && state.conversation.id); notice('Local settings saved.');
   } catch (error) { notice(error.message, true); }
+});
+
+$('poll-communications').addEventListener('click', async event => {
+  event.currentTarget.disabled = true;
+  notice('Checking configured channels…');
+  try {
+    const result = await jsonRequest('/api/communications/poll', {});
+    await load(); show('communications');
+    const imported = result.results.reduce((sum, item) => sum + (item.imported || item.imported_or_updated || 0), 0);
+    const errors = result.results.filter(item => item.error).length;
+    notice(errors ? `Check finished with ${errors} connector error. ${imported} items imported or updated.` : `Channels checked. ${imported} items imported or updated.`, errors > 0);
+  } catch (error) { notice(error.message, true); }
+  finally { event.currentTarget.disabled = false; }
 });
 
 function updateClock() {

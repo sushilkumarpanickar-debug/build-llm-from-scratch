@@ -15,7 +15,8 @@
       <button data-view="agent-hub"><i>◉</i>AI Agent Hub</button>
       <button data-view="tasks"><i>◇</i>Missions</button>
       <button data-view="tasks"><i>▣</i>Tasks <b id="nav-task-count">0</b></button>
-      <button data-view="dashboard" data-message="Calendar connection is planned for a later phase."><i>▤</i>Calendar</button>
+      <button data-view="communications"><i>⌁</i>Messages <b id="nav-message-count">0</b></button>
+      <button data-view="communications"><i>▤</i>Calendar</button>
       <button data-view="knowledge"><i>▱</i>Memory</button>
       <button data-view="chat"><i>□</i>Conversations <b id="nav-chat-count">0</b></button>
       <button data-view="documents"><i>❉</i>Knowledge Base</button>
@@ -35,7 +36,7 @@
     <header class="topbar">
       <div class="system-pill"><span>SYSTEM STATUS</span><b><i></i><span id="core-state">SCANNING</span></b></div>
       <div class="datetime"><span id="date">—</span><strong id="clock">--:--:--</strong></div>
-      <div class="top-actions"><label class="search-box">⌕<input id="global-search" placeholder="Search…"></label><select id="scope" class="scope-select" aria-label="Workspace domain"><option>Personal</option></select><button title="Applications">⊞</button><button title="Notifications">♧</button><button data-view="settings" title="Settings">⚙</button><div class="operator"><span>Operator<small>Command</small></span><b>◎</b></div></div>
+      <div class="top-actions"><label class="search-box">⌕<input id="global-search" placeholder="Search…"></label><select id="scope" class="scope-select" aria-label="Workspace domain"><option>Personal</option></select><button title="Applications">⊞</button><button data-view="communications" title="Messages and approvals">♧</button><button data-view="settings" title="Settings">⚙</button><div class="operator"><span>Operator<small>Command</small></span><b>◎</b></div></div>
     </header>
     <div id="notice" role="status" aria-live="polite"></div>
 
@@ -81,6 +82,7 @@
           <button data-view="tasks"><i>＋</i> Start New Task</button>
           <button data-view="finance"><i>₹</i> Analyse Finance File</button>
           <button id="quick-voice"><i>♬</i> Start Voice Chat</button>
+          <button data-view="communications"><i>⌁</i> Check Messages</button>
           <button data-view="agent-hub"><i>▷</i> Open AI Agent Hub</button>
         </article>
 
@@ -130,6 +132,17 @@
         <article class="card"><span class="card-tag">PLANNED · SUPERVISED</span><h3>Operator Orchestrator</h3><p>JARVIS-style tool control for filesystem, browser, calendar, email, finance and workflows through allowlisted MCP tools and approvals.</p></article>
         <article class="card"><span class="card-tag">ACTIVE · LOCAL</span><h3>Finance &amp; Business Analyst</h3><p>Deterministic CSV/XLSX profiling and read-only finance MCP support for ledgers, cash-flow files and business calculations.</p></article>
         <article class="card"><span class="card-tag">ACTIVE · LOCAL</span><h3>Mission Planner</h3><p>Break broad instructions into staged mission plans with deliverables, checks and clear next actions.</p></article>
+      </div>
+    </section>
+
+    <section id="communications" class="view" hidden>
+      <div class="page-intro"><div><span>COMMUNICATIONS BRIDGE</span><h1>Messages, approvals and calendar in one private console.</h1></div><div class="conversation-controls"><b id="approval-summary">0 PENDING</b><button id="poll-communications" class="primary">CHECK NOW</button></div></div>
+      <article class="hud-card connector-strip"><div class="card-head"><span>CONNECTED CHANNELS</span><b>ALLOWLISTED</b></div><div id="communication-connectors" class="communication-connectors"></div></article>
+      <div class="communication-grid">
+        <article class="hud-card communication-panel"><div class="card-head"><span>UNIFIED INBOX</span><b id="inbox-summary">0 NEW</b></div><div id="communication-inbox" class="communication-list"></div></article>
+        <article class="hud-card communication-panel"><div class="card-head"><span>APPROVAL QUEUE</span><b>HUMAN CONTROL</b></div><div id="communication-approvals" class="communication-list"></div></article>
+        <article class="hud-card communication-panel"><div class="card-head"><span>UPCOMING CALENDAR</span><b>READ ONLY</b></div><div id="communication-calendar" class="communication-list"></div></article>
+        <article class="hud-card form-card connector-guide"><div class="card-head"><span>PRIVATE SETUP</span><b>LOCAL CREDENTIALS</b></div><p><strong>Telegram</strong> accepts instructions only from allowed chat IDs and can receive <code>/approve 12</code> or <code>/reject 12</code>.</p><p><strong>Gmail and Google Calendar</strong> use read-only OAuth. DAKSH can review mail and events but cannot send or edit them in this phase.</p><p><strong>WhatsApp</strong> uses Meta's official Cloud API webhook and remains off until you explicitly configure a business app and secure HTTPS endpoint.</p><small>Credentials stay in the ignored local data folder. See COMMUNICATION_CONNECTORS.md for the guided setup.</small></article>
       </div>
     </section>
 
