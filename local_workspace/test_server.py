@@ -35,6 +35,21 @@ class WorkspaceTest(unittest.TestCase):
     def post(self, path, data):
         return self.client.post(path, json=data, headers=self.headers)
 
+    def test_protocol_risk_contract_does_not_grant_authorization(self):
+        data = {'scope':'SNNS Smartact','goal':'Assess a project','domain':'finance','probability':0.1,'loss':1000,'tolerance':500}
+        self.assertEqual(self.client.post('/api/protocol/contract',json=data).status_code,403)
+        result = self.post('/api/protocol/contract',data)
+        self.assertEqual(result.status_code,200)
+        self.assertEqual(result.json()['scope'],'SNNS Smartact')
+        self.assertEqual(result.json()['risk']['expected_loss'],100)
+        self.assertIn('exceeds tolerance',result.json()['risk']['assessment'])
+        self.assertIn('No new permissions',result.json()['authorization'])
+        self.assertEqual(result.json()['status'],'planned')
+        for change in [{'probability':1.1},{'loss':-1},{'tolerance':None},{'domain':'arbitrary-shell'},{'scope':'Other'}]:
+            self.assertEqual(self.post('/api/protocol/contract',{**data,**change}).status_code,400)
+        unknown = self.post('/api/protocol/contract',{'goal':'Explain a document'}).json()
+        self.assertIsNone(unknown['risk']['expected_loss'])
+
     def test_local_workflow_is_scoped_and_cannot_select_arbitrary_files(self):
         catalog = self.client.get('/api/local-skills').json()['skills']
         self.assertTrue(any(x['name']=='finance-budget' for x in catalog))

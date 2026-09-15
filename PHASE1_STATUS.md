@@ -27,7 +27,7 @@ Status reviewed: 15 September 2026.
 - Automated, bulk, no-reply, mailing-list, security, password, and credential notices are excluded from automatic reply proposals.
 - The private Telegram bot token and one allowed private chat are configured in the protected local `.env`. The bot was verified, two real messages were imported, and a live confirmation message was delivered back to the authorized chat.
 - Meta's WhatsApp callback is saved and the `messages` field is subscribed. A Meta dashboard sample reached the signed webhook and returned HTTP 200 on 15 September 2026. The sample sender is outside the private allowlist and is not imported as an instruction.
-- The local automated suite passed: 13 tests on 15 September 2026.
+- The local automated suite passed: 14 tests on 16 September 2026.
 
 ## Remaining before Phase 1 is operational on the user's accounts
 
@@ -47,3 +47,7 @@ Status reviewed: 15 September 2026.
 ## Later-phase work
 
 Email attachment-aware reply drafting, automatic sending, calendar editing, browser control, desktop control, statutory portal submissions, payments, and autonomous external actions are not Phase 1 capabilities. They require separate tool permissions, narrow workflows, and action-specific approvals.
+
+## Universal protocol update — 16 September 2026
+
+DAKSH-OP-001 is applied as local chat/task prompt guidance, with an authenticated Decision Protocol task-contract builder. Native form and contract response were verified. Unknown risk stays unknown; expected loss and worst-case tolerance are separate, and no result grants execution approval. Portable protocol/handoff files are under protocols/. Ten additional public capability candidates were source-reviewed in PUBLIC_CAPABILITY_REVIEW.md; none was installed. The JARVIS video description was checked, but no transcript was available and the complete installation is linked through AI Workshop, not an identified public finished-build repo.

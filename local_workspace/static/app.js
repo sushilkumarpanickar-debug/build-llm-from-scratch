@@ -660,6 +660,8 @@ document.querySelectorAll('[data-view]').forEach(button => button.addEventListen
 $('scope').addEventListener('change', async () => {
   $('holo-frame').src = 'about:blank';
   $('local-skill-result').textContent = ''; $('local-skill-input').value = '';
+  for (const k of ['goal','context','probability','loss','tolerance']) $('protocol-'+k).value = '';
+  $('protocol-result').textContent = '';
   $('local-skill-download').disabled = true; $('local-skill-pdf').disabled=true; localSkillReport = '';
   notice(); await load(); show('graph');
 });
@@ -876,3 +878,14 @@ $('local-skill-pdf').addEventListener('click',async()=> {
 loadLocalSkillCatalog().catch(error=>notice(error.message,true));
 updateClock(); setInterval(updateClock, 1000); show('graph');
 load().then(scan).catch(error => notice(error.message, true));
+
+$('protocol-form').addEventListener('submit', async event => {
+  event.preventDefault(); const scope = state.scope;
+  const data = {scope, goal:$('protocol-goal').value,domain:$('protocol-domain').value,context:$('protocol-context').value};
+  for (const k of ['probability','loss','tolerance']) if ($('protocol-'+k).value !== '') data[k] = Number($('protocol-'+k).value);
+  try {
+    const response = await fetch('/api/protocol/contract',{method:'POST',headers:{'Content-Type':'application/json','X-Workspace-Token':state.token},body:JSON.stringify(data)});
+    const result = await response.json(); if (!response.ok) throw Error(result.detail || 'Contract failed');
+    if (state.scope === scope) $('protocol-result').textContent = result.markdown;
+  } catch (error) { if (state.scope === scope) $('protocol-result').textContent = error.message; }
+});

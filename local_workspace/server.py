@@ -17,8 +17,9 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Res
 
 try:
     from .db import MEMORY_CATEGORIES, SCOPES, Store, utcnow
-    from . import communications, finance, ingestion, integrations, ollama_client, voice
+    from . import communications, finance, ingestion, integrations, ollama_client, voice, operating_protocol
 except ImportError:
+    import operating_protocol
     import communications
     import finance
     from db import MEMORY_CATEGORIES, SCOPES, Store, utcnow
@@ -476,7 +477,7 @@ def create_app(data_dir=None):
             system = (
                 "You are DAKSH, the user's private local second brain and careful executive assistant. "
                 f"Current workspace: {scope}. Current local chat model: {model}, running through Ollama on this Mac. "
-                "Answer clearly and practically. Use supplied references when relevant. "
+                + operating_protocol.PROMPT + "Answer clearly and practically. Use supplied references when relevant. "
                 + voice_instruction
                 +
                 "Cite document facts inline as [Source: filename — page or sheet]. Cite memories as [Memory N]. "
@@ -509,7 +510,7 @@ def create_app(data_dir=None):
         if model not in ollama_client.chat_models():
             raise HTTPException(503, "No local chat model is available.")
         answer = ollama_client.chat(model, [
-            {"role": "system", "content": "Create a concrete numbered plan with deliverables, checks and approvals. Do not claim execution."},
+            {"role": "system", "content": operating_protocol.PROMPT + "Create a concrete numbered plan with deliverables, checks and approvals. Do not claim execution."},
             {"role": "user", "content": prompt},
         ])
         identifier, _ = store.execute(
@@ -532,6 +533,14 @@ def create_app(data_dir=None):
     @app.get("/")
     def index():
         return FileResponse(STATIC / "index.html")
+
+    @app.post("/api/protocol/contract", dependencies=[Depends(authorize)])
+    def protocol_contract(data: dict = Body(...)):
+        scope = require_scope(data.get("scope", "Personal"))
+        try:
+            return operating_protocol.contract(data, scope)
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(400, str(exc)) from exc
 
     @app.get('/api/local-skills')
     def local_skill_catalog():
