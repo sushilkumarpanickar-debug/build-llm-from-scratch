@@ -27,13 +27,22 @@ Status reviewed: 15 September 2026.
 - Automated, bulk, no-reply, mailing-list, security, password, and credential notices are excluded from automatic reply proposals.
 - The private Telegram bot token and one allowed private chat are configured in the protected local `.env`. The bot was verified, two real messages were imported, and a live confirmation message was delivered back to the authorized chat.
 - Meta's WhatsApp callback is saved and the `messages` field is subscribed. A Meta dashboard sample reached the signed webhook and returned HTTP 200 on 15 September 2026. The sample sender is outside the private allowlist and is not imported as an instruction.
-- The local automated suite passed: 12 tests on 15 September 2026.
+- The local automated suite passed: 13 tests on 15 September 2026.
 
 ## Remaining before Phase 1 is operational on the user's accounts
 
 1. Finish optional WhatsApp production activation: supply and publish an approved privacy policy, satisfy Meta publishing requirements, connect a production business number, and configure a durable HTTPS endpoint. The current accountless tunnel is temporary. Cloud API intake does not provide access to the user's existing personal WhatsApp inbox; message charges may apply.
 2. Speak one live instruction in the already-authorized native voice session and confirm the spoken reply. The local transcription and speech engines have passed independent live tests.
-3. Accept the installed Xcode license on this Mac before a fresh native build; the current developer tools reject build commands until this is done. Git operations use the Command Line Tools Git binary directly in the meantime.
+3. Verify live webcam gestures and the native Save dialog for exported workflow reports. Camera-free HOLO rendering is verified; camera access is opt-in.
+
+## Graph and workflow update — 15 September 2026
+
+- Xcode license is accepted; the updated native app builds successfully and is installed at `/Applications/DAKSH.app`. Its repository preference is reset to the current main checkout.
+- Brain Graph is the primary workspace, adapted from MIT-licensed brain-map with local D3. It displays actual scoped records and explicit links.
+- HOLO Gesture Deck runs local vendored MediaPipe assets, with camera-free demo and explicit start/stop. Leaving the view or changing scope stops the deck.
+- Finance and agency skill templates run through local Ollama, with Markdown/PDF report export. Templates do not authorize tools or external actions.
+- All 80 public repositories in the account were inventoried and source-triaged; this is not an audit or installation of all repositories.
+- Known retired app/Xcode copies were backed up privately and removed; see RETIRED_DAKSH_COPIES.md.
 
 ## Later-phase work
 

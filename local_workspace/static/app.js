@@ -51,6 +51,7 @@ async function load(conversationId) {
 }
 
 function show(name, message = '', trigger = null) {
+  if (name !== 'holo' && $('holo-frame').getAttribute('src') !== 'about:blank') $('holo-frame').src = 'about:blank';
   document.querySelectorAll('.view').forEach(node => { node.hidden = node.id !== name; });
   document.querySelectorAll('.left-rail nav button').forEach(node => node.classList.remove('active'));
   const activeNav = trigger && trigger.closest('.left-rail nav') ? trigger : document.querySelector(`.left-rail nav button[data-view="${name}"]:not([data-message])`);
@@ -60,6 +61,7 @@ function show(name, message = '', trigger = null) {
 }
 
 function render() {
+  renderBrainGraph();
   renderModels(); renderConversations(); renderMessages(); renderNotes();
   renderDocuments(); renderTasks(); renderSettings(); renderDashboard(); renderCapabilities();
   renderIntegrations(); renderCommunications();
@@ -655,7 +657,12 @@ function interruptVoice() {
 }
 
 document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => show(button.dataset.view, button.dataset.message, button)));
-$('scope').addEventListener('change', async () => { notice(); await load(); show('dashboard'); });
+$('scope').addEventListener('change', async () => {
+  $('holo-frame').src = 'about:blank';
+  $('local-skill-result').textContent = ''; $('local-skill-input').value = '';
+  $('local-skill-download').disabled = true; $('local-skill-pdf').disabled=true; localSkillReport = '';
+  notice(); await load(); show('graph');
+});
 $('conversation').addEventListener('change', () => load($('conversation').value).catch(error => notice(error.message, true)));
 $('search').addEventListener('input', renderNotes);
 $('refresh').addEventListener('click', scan);
@@ -759,5 +766,113 @@ function updateClock() {
   $('date').textContent = now.toLocaleDateString([], {weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'}).toUpperCase();
 }
 
-updateClock(); setInterval(updateClock, 1000); show('dashboard');
+let brainGraph = null;
+function renderBrainGraph() {
+  const groups = {
+    core: {name:'Workspace',c:'#f5c86b',r:14,pace:10,pause:10},
+    documents: {name:'Documents',c:'#38bdf8',r:7,pace:8,pause:30},
+    memory: {name:'Explicit memory',c:'#2dd4bf',r:7,pace:8,pause:30},
+    tasks: {name:'Tasks',c:'#c4b5fd',r:7,pace:8,pause:30},
+    conversations: {name:'Conversations',c:'#94a3b8',r:6,pace:8,pause:30},
+    approvals: {name:'Approvals',c:'#fb923c',r:8,pace:8,pause:30}
+  };
+  const nodes = [{label:state.scope,key:'workspace',g:'core',view:'dashboard',detail:'Current private workspace. Grouping links do not imply business relationships.'}];
+  const links = [];
+  const records = [
+    ['documents',state.documents,'documents',x=>x.filename, x=>`${x.status} · ${x.chunk_count} indexed chunks`],
+    ['memory',state.notes,'knowledge',x=>x.title,x=>`${x.category}\n${x.content.slice(0,240)}`],
+    ['tasks',state.tasks,'tasks',x=>x.title,x=>x.status],
+    ['conversations',state.conversations,'chat',x=>x.title,x=>'Persistent local conversation'],
+    ['approvals',state.communications.approvals,'communications',x=>`${x.connector}: ${x.reply_subject || x.action}`,x=>`${x.status} · Review in Messages before acting`]
+  ];
+  for (const [g,items,view,label,detail] of records) {
+    if (!items.length) continue;
+    const hub = nodes.length;
+    nodes.push({label:groups[g].name,key:`group:${g}`,g,view,detail:`${items.length} records in ${state.scope}`});
+    links.push({s:0,t:hub});
+    for (const x of items) {
+      links.push({s:hub,t:nodes.length});
+      nodes.push({label:label(x),key:`${g}:${x.id}`,g,view,detail:detail(x),recordId:x.id});
+    }
+  }
+  // Resolve only explicit [[title]] references with one unambiguous target.
+  for (const note of state.notes) {
+    const s = nodes.findIndex(n=>n.key===`memory:${note.id}`);
+    for (const match of note.content.matchAll(/\[\[([^\]]+)\]\]/g)) {
+      const name = match[1].split('|')[0].trim().toLowerCase();
+      const targets = nodes.map((n,i)=>({n,i})).filter(x=>x.i!==s && x.n.recordId && x.n.label.toLowerCase()===name);
+      if (targets.length===1 && !links.some(l=>l.s===s && l.t===targets[0].i)) links.push({s,t:targets[0].i,reference:true});
+    }
+  }
+  brainGraph = {groups,nodes,links};
+  $('graph-summary').textContent = `${state.scope} · ${nodes.filter(n=>n.recordId).length} real records · ${links.filter(l=>l.reference).length} explicit references. ${nodes.length===1 ? 'Add a document or memory to grow your graph.' : ''}`;
+  $('brain-frame').src = '/brain-map.html?revision=' + Date.now();
+}
+window.addEventListener('message', event => {
+  const frame = $('brain-frame');
+  if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
+  if (event.data?.type==='daksh-graph-ready' && brainGraph) frame.contentWindow.postMessage({type:'daksh-graph',graph:brainGraph},location.origin);
+  if (event.data?.type==='daksh-graph-open' && brainGraph) {
+    const node = brainGraph.nodes.find(n=>n.key===event.data.key);
+    if (!node) return;
+    show(node.view);
+    if (node.g==='conversations' && node.recordId) load(node.recordId).catch(error=>notice(error.message,true));
+    else notice(node.label);
+  }
+});
+$('graph-refresh').addEventListener('click',()=>load(state.conversation?.id).catch(error=>notice(error.message,true)));
+let localSkillReport = '';
+async function loadLocalSkillCatalog() {
+  const response = await fetch('/api/local-skills');
+  if (!response.ok) throw Error('Could not load local workflow references.');
+  const catalog = await response.json();
+  $('local-skill-select').replaceChildren(...catalog.skills.map(x=>new Option(`${x.suite.includes('finance')?'Finance':'Agency'} · ${x.name}`,x.id)));
+}
+window.addEventListener('message',event=> {
+  const frame = $('holo-frame');
+  if (event.origin!==location.origin || event.source!==frame.contentWindow || event.data?.type!=='daksh-holo-ready') return;
+  const files = state.notes.slice(0,40).map(x=>({name:`memory-${x.id}.md`,title:x.title,body:x.content.slice(0,420),full:x.content.slice(0,4000)}));
+  const documents = state.documents.slice(0,40).map(x=>({name:x.filename,title:x.filename,body:`${x.status} · ${x.chunk_count} indexed chunks`,full:'Open Knowledge Base and ask DAKSH for document-grounded answers. This card shows indexing metadata, not extracted document content.'}));
+  const tree = [];
+  if(files.length)tree.push({kind:'folder',name:'MEMORY',files});
+  if(documents.length)tree.push({kind:'folder',name:'DOCUMENTS',files:documents});
+  if(!tree.length)tree.push({kind:'folder',name:state.scope.toUpperCase(),files:[{name:'welcome.md',title:'Add your knowledge',body:'Add explicit memory or upload documents in DAKSH to populate this deck.',full:'This is a welcome card, not a stored memory. Camera frames stay in this page. Leave the deck or press Stop deck to release the camera.'}]});
+  frame.contentWindow.postMessage({type:'daksh-holo',tree},location.origin);
+});
+$('holo-start').addEventListener('click',()=>{$('holo-frame').src='/holo/holo.html';});
+$('holo-demo').addEventListener('click',()=>{$('holo-frame').src='/holo/holo.html?sim=1';});
+$('holo-stop').addEventListener('click',()=>{$('holo-frame').src='about:blank';});
+$('local-skill-form').addEventListener('submit',async event=> {
+  event.preventDefault();
+  $('local-skill-run').disabled=true; $('local-skill-download').disabled=true; $('local-skill-pdf').disabled=true;
+  $('local-skill-status').textContent='Working with your local Ollama model…';
+  $('local-skill-result').textContent=''; localSkillReport='';
+  const requestedScope=currentScope();
+  try {
+    const result=await jsonRequest('/api/local-skills/run',{skill:$('local-skill-select').value,evidence:$('local-skill-input').value});
+    if(currentScope()!==requestedScope)return;
+    localSkillReport=`# DAKSH local workflow report\n\nWorkspace: ${result.scope}\nModel: ${result.model}\nWorkflow: ${result.skill}\n\n${result.response}`;
+    $('local-skill-result').textContent=result.response;
+    $('local-skill-status').textContent='Local report ready. Review assumptions and evidence gaps before use.';
+    $('local-skill-download').disabled=false; $('local-skill-pdf').disabled=false;
+    await load(state.conversation?.id);
+  } catch(error) { if(currentScope()===requestedScope)$('local-skill-status').textContent=error.message; }
+  finally { $('local-skill-run').disabled=false; }
+});
+$('local-skill-download').addEventListener('click',()=> {
+  if(!localSkillReport)return;
+  const url=URL.createObjectURL(new Blob([localSkillReport],{type:'text/markdown'}));
+  const link=document.createElement('a');link.href=url;link.download='DAKSH-local-report.md';link.click();URL.revokeObjectURL(url);
+});
+$('local-skill-pdf').addEventListener('click',async()=> {
+  if(!localSkillReport)return;
+  const button=$('local-skill-pdf');button.disabled=true;
+  try {
+    const response=await fetch('/api/local-skills/export',{method:'POST',headers:{'Content-Type':'application/json','X-Workspace-Token':state.token},body:JSON.stringify({scope:currentScope(),report:localSkillReport})});
+    if(!response.ok)throw Error('PDF export could not finish. Check local dependencies.');
+    const url=URL.createObjectURL(await response.blob());const link=document.createElement('a');link.href=url;link.download='DAKSH-local-report.pdf';link.click();URL.revokeObjectURL(url);
+  }catch(error){$('local-skill-status').textContent=error.message;}finally{button.disabled=!localSkillReport;}
+});
+loadLocalSkillCatalog().catch(error=>notice(error.message,true));
+updateClock(); setInterval(updateClock, 1000); show('graph');
 load().then(scan).catch(error => notice(error.message, true));

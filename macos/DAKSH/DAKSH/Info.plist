@@ -31,6 +31,8 @@
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>DAKSH uses the microphone for private local voice conversations.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>DAKSH uses the camera only when you start local hand gestures. Frames remain on your Mac.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>

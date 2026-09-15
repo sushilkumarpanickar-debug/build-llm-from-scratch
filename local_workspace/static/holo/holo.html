@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8"><title>HOLO — hand-gesture control deck</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/holo/holo.css"></head><body>
+<video id="cam" autoplay playsinline muted></video>
+<canvas id="stars"></canvas>
+<div id="vignette"></div>
+<div id="dock"><span>SHELF</span></div>
+<div id="deck"></div>
+<canvas id="gl"></canvas>
+<canvas id="hud"></canvas>
+<div id="ring"><div class="r1"></div><div class="r2"></div>
+  <div class="mid"><b>H.O.L.O.</b><i id="ringstate">ACTIVE</i></div></div>
+<div id="ui">
+  <span id="title">H O L O</span>
+  <span class="chip" id="hands">HANDS ON</span>
+  <span class="chip off" id="camvis">CAM 55%</span>
+  <span class="chip off" id="reset">RESET</span>
+  <span class="chip off" id="fx">EFFECTS</span>
+  <span class="chip off" id="debug">DEBUG</span>
+  <span class="chip off" id="jarvis">JARVIS</span>
+  <span class="chip" id="retry">RETRY CAMERA</span>
+  <span id="status">booting…</span>
+</div>
+<div id="reader"><div class="pane"><h2></h2><pre></pre><div class="hint">PINCH ANYWHERE · TAP · OR CLICK TO CLOSE</div></div></div>
+<div id="caption"></div>
+<div id="legend"><b>PINCH</b> grab / tap = open &nbsp;·&nbsp; <b>FLICK</b> throw (off-screen = gone) &nbsp;·&nbsp; <b>2-HAND STRETCH</b> big = read · crush = TL;DR<br>
+<b>TWO PINCHES</b> (apart/together) zoom · twist = rotate &nbsp;·&nbsp; <b>2-HAND STRETCH</b> on a held card: big = read · crush = TL;DR · 3D comes APART<br>
+<b>PEACE ✌</b> = RESET everything &nbsp;·&nbsp; dock right = shelf &nbsp;·&nbsp; <b>J</b> jarvis mode &nbsp;·&nbsp; <b>F</b> = EFFECTS (pull · palm-hold push · ink · clap · tidy)<br>
+No bundled 3D props in this DAKSH adaptation.</div>
+<div id="dbg"></div>
+<div id="perm"><div class="box"><b>HOLO needs your camera</b><br>
+  Hand tracking runs entirely on this page — frames never leave your machine and no AI watches the feed.
+  Allow the camera, then just reach out and touch things. (Press <b>H</b> for mouse-only mode.)</div></div>
+
+
+<script type="module" src="/holo/holo.js"></script>
+</body></html>

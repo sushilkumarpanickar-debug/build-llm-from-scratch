@@ -20,3 +20,8 @@ The user authorized Phase 1 implementation and supplied the SNNS logo, JARVIS re
 | Graph/RAG memory alternatives | Compare Rememble, mcp-knowledge-graph, knowledge-mcp, and related servers | Reviewed as alternatives, not installed; DAKSH already has scoped SQLite memory and document RAG, so a second memory authority would duplicate state. |
 
 No paid AI provider skill or hosted inference is approved for this project.
+
+## Graph UI adoption — 15 September 2026
+The user authorized implementation of the reviewed repository. `zubair-trabzada/brain-map` public MIT UI is adapted inside DAKSH with local D3 7.9.0 and scoped workspace records. No upstream installer is executed, no independent note server is enabled, and no restricted Brain Studio code is copied. Holo gestures and desktop control remain separate, unimplemented candidates.
+
+The user also authorized `holo-gestures`, `ai-finance-claude`, and `ai-agency-claude` on 15 September 2026. HOLO assets are vendored with pinned source records and cloud fallbacks removed; it receives only scoped memory text/document indexing metadata. Camera is opt-in and released when leaving the deck. Business suite Markdown references are vendored under MIT and adapted to one local Ollama call, with no delegated tools, automatic web fetching or external actions. Reviewed output can be downloaded locally as Markdown or PDF. Tax and legal content is jurisdiction-dependent. All 80 public repos received README/root-license source triage; this does not authorize their installers.

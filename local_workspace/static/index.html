@@ -11,7 +11,10 @@
   <aside class="left-rail">
     <a class="brand" href="/"><span class="brand-core" aria-hidden="true"><img src="/snns_emblem.png" alt=""></span><span>DAKSH<small>PRIVATE INTELLIGENCE</small></span></a>
     <nav aria-label="Main navigation">
-      <button data-view="dashboard" class="active"><i>⌘</i>Command Center</button>
+      <button data-view="holo"><i>✋</i>Gesture Deck</button>
+      <button data-view="local-skills"><i>◇</i>Business Skills</button>
+      <button data-view="graph" class="active"><i>⌁</i>Brain Graph</button>
+      <button data-view="dashboard"><i>⌘</i>Command Center</button>
       <button data-view="agent-hub"><i>◉</i>AI Agent Hub</button>
       <button data-view="tasks"><i>◇</i>Missions</button>
       <button data-view="tasks"><i>▣</i>Tasks <b id="nav-task-count">0</b></button>
@@ -100,6 +103,14 @@
       </div>
     </section>
 
+    <section id="graph" class="view" hidden>
+      <div class="page-intro"><div><span>LOCAL SECOND BRAIN</span><h1>Your knowledge, connected.</h1><p id="graph-summary">Loading the current workspace…</p></div><div><button id="graph-refresh">↻ Refresh graph</button><button data-view="documents">＋ Add documents</button><button data-view="knowledge">＋ Add memory</button></div></div>
+      <div class="graph-workspace hud-card"><iframe id="brain-frame" title="DAKSH interactive knowledge graph" src="about:blank"></iframe></div>
+      <p class="graph-caption">Grouped by record type. Solid links show workspace membership; dashed links show explicit memory references. No inferred business relationships. Drag nodes or empty space, scroll to zoom, search and press Enter, or double-click a node to open its workspace.</p>
+    </section>
+
+    <section id="holo" class="view" hidden><div class="page-intro"><div><span>OPTIONAL LOCAL CAMERA</span><h1>Reach into your second brain.</h1><p>Camera frames stay in the gesture page. Pinch and move memory cards. Mouse and synthetic demo modes work without camera access. This deck does not control other Mac applications.</p></div><div><button id="holo-start">Start camera gestures</button><button id="holo-demo">Camera-free demo</button><button id="holo-stop">Stop deck</button></div></div><div class="graph-workspace hud-card"><iframe id="holo-frame" title="DAKSH local hand gesture deck" allow="camera" src="about:blank"></iframe></div></section>
+    <section id="local-skills" class="view" hidden><div class="page-intro"><div><span>LOCAL OLLAMA WORKFLOWS</span><h1>Finance and agency skills.</h1><p>Adapted upstream workflow references. Runs one local model; no Claude subscription, tool execution or external actions. Supply the evidence to analyse. Tax and legal templates require jurisdiction checks.</p></div></div><article class="hud-card form-card"><form id="local-skill-form"><label>Workflow<select id="local-skill-select"></select></label><label>Facts and evidence<textarea id="local-skill-input" rows="7" maxlength="12000" placeholder="Provide income, costs, business facts or source extracts. Missing information will be flagged." required></textarea></label><button id="local-skill-run" class="primary">Run locally</button><button id="local-skill-download" type="button" disabled>Download Markdown</button><button id="local-skill-pdf" type="button" disabled>Download PDF</button></form><p id="local-skill-status" role="status"></p><pre id="local-skill-result" class="skill-report"></pre></article></section>
     <section id="chat" class="view" hidden>
       <div class="page-intro"><div><span>CONVERSATIONS</span><h1>Talk to your local second brain.</h1></div><div class="conversation-controls"><select id="conversation"></select><button id="new-conversation">＋ New</button><button id="delete-conversation" class="danger">Delete</button></div></div>
       <div class="chat-layout"><article class="hud-card conversation-panel"><div id="messages"></div><form id="chat-form" class="composer"><label for="prompt">DIRECTIVE INPUT</label><textarea id="prompt" rows="3" maxlength="12000" placeholder="Ask, analyse, plan, or say ‘remember that…’" required></textarea><div><select id="model"></select><button id="mic" type="button">◉ MIC</button><span>PRIVATE · LOCAL</span><button class="primary">TRANSMIT</button></div></form></article><aside class="hud-card source-column"><div class="card-head"><span>RETRIEVED SOURCES</span></div><div id="source-panel"><p>No sources retrieved yet.</p></div></aside></div>

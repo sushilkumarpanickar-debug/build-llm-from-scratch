@@ -1,0 +1,121 @@
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#05070a; font-family:-apple-system,"Segoe UI",sans-serif; }
+  /* v3 layers: the CAMERA IS THE STAGE (bright), everything floats on it */
+  #cam { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:1;
+         transform:scaleX(-1); opacity:.55; filter:saturate(.85) brightness(.95); transition:opacity .4s; }
+  #vignette { position:fixed; inset:0; z-index:2; pointer-events:none;
+         background:radial-gradient(ellipse at center, transparent 40%, rgba(4,6,9,.55) 100%); }
+  #stars { position:fixed; inset:0; z-index:2; pointer-events:none; opacity:.5; }
+  #deck { position:fixed; inset:0; z-index:3; perspective:1200px; }
+  .card { position:absolute; width:230px; min-height:110px; max-height:200px; overflow:hidden;
+          padding:14px 16px; border-radius:14px; will-change:transform;
+          background:rgba(12,18,24,.78); border:1px solid rgba(120,255,214,.25);
+          backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+          box-shadow:0 14px 44px rgba(0,0,0,.5); transition:border-color .12s, box-shadow .12s; }
+  .card h3 { font-family:"SF Mono",ui-monospace,Menlo,monospace; font-size:12.5px; letter-spacing:.08em;
+             color:#a9ffe6; font-weight:600; margin-bottom:7px; text-transform:uppercase; }
+  .card p { font-size:11px; line-height:1.55; color:#c9d6d2; white-space:pre-wrap; }
+  .orb { position:absolute; width:150px; height:150px; border-radius:50%; will-change:transform;
+         display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+         background:radial-gradient(circle at 38% 32%, rgba(60,110,96,.5), rgba(10,18,22,.72) 70%);
+         border:1.5px solid rgba(125,255,217,.5); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+         box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 0 30px rgba(90,255,215,.12);
+         transition:border-color .12s, box-shadow .12s; }
+  .orb h3 { font-family:"SF Mono",ui-monospace,monospace; font-size:12px; letter-spacing:.18em;
+            color:#d9fff2; font-weight:700; }
+  .orb span { font-family:"SF Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.1em; color:#8fd8c2; }
+  .orb.openf { opacity:.55; border-style:dashed; }
+  .hover { border-color:#9dffe4 !important;
+           box-shadow:0 18px 60px rgba(0,0,0,.55), 0 0 54px rgba(110,255,222,.75),
+                      inset 0 0 22px rgba(110,255,222,.18) !important; }
+  .grab  { border-color:#7dffd9 !important;
+           box-shadow:0 22px 70px rgba(0,0,0,.6), 0 0 50px rgba(110,255,220,.5) !important; }
+  .docked { border-color:rgba(240,200,100,.55) !important; }
+  /* width/height 100% is LOAD-BEARING: a canvas is a REPLACED element — inset:0 does
+     NOT stretch it, it falls back to its intrinsic (2×-retina) buffer size. Without
+     this the GL layer is double-sized on any dpr=2 screen and the objects render
+     off the visible quarter (invisible on retina, perfect in dpr=1 headless). */
+  #gl { position:fixed; inset:0; width:100%; height:100%; z-index:3; pointer-events:none; }
+  #hud { position:fixed; inset:0; z-index:4; pointer-events:none; }
+  /* the ACTIVE ring, top-left — the status jewel */
+  #ring { position:fixed; left:34px; top:70px; z-index:4; width:150px; height:150px; pointer-events:none; }
+  #ring .r1 { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(125,255,217,.65);
+              box-shadow:0 0 24px rgba(125,255,217,.25), inset 0 0 24px rgba(125,255,217,.12);
+              animation:spin 14s linear infinite; border-top-color:transparent; }
+  .card p { font-size:11px; }
+  #ring .r2 { position:absolute; inset:12px; border-radius:50%; border:1px dashed rgba(125,255,217,.4);
+              animation:spin 9s linear infinite reverse; }
+  #ring .mid { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+               justify-content:center; gap:5px; }
+  #ring .mid b { font-family:"SF Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.3em;
+               color:#eafff8; font-weight:700; }
+  #ring .mid i { font-family:"SF Mono",ui-monospace,monospace; font-size:8.5px; letter-spacing:.4em;
+               color:#7dffd9; font-style:normal; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  /* ---------- JARVIS MODE (V7 preview): gold skin + spoken-line captions ---------- */
+  body.jarvis #ring .r1 { border-color:rgba(255,204,110,.75); border-top-color:transparent;
+    box-shadow:0 0 26px rgba(255,196,90,.28), inset 0 0 26px rgba(255,196,90,.14); }
+  body.jarvis #ring .r2 { border:1px solid rgba(255,204,110,.42); animation-duration:5s; }
+  body.jarvis #ring .mid b { color:#ffe9c4; }
+  body.jarvis #ring .mid i { color:#ffcf7d; }
+  body.jarvis #title { color:#ffe9c4; }
+  body.jarvis #jarvis { color:#ffcf7d !important; border-color:rgba(255,204,110,.55) !important;
+    box-shadow:0 0 18px rgba(255,196,90,.18); }
+  body.jarvis.speaking #ring .r1 { animation:spin 14s linear infinite, jbreathe 1.05s ease-in-out infinite; }
+  @keyframes jbreathe { 50% { box-shadow:0 0 46px rgba(255,196,90,.55), inset 0 0 34px rgba(255,196,90,.3); } }
+  #caption { position:fixed; left:50%; bottom:84px; transform:translateX(-50%) translateY(8px); z-index:6;
+    max-width:min(760px, 84vw); padding:10px 22px; border-radius:12px; text-align:center;
+    font-family:"SF Mono",ui-monospace,monospace; font-size:13px; letter-spacing:.1em; line-height:1.6;
+    color:#ffe9c4; background:rgba(10,14,18,.72); border:1px solid rgba(255,204,110,.3);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    text-shadow:0 0 14px rgba(255,196,90,.35); opacity:0; pointer-events:none;
+    transition:opacity .25s, transform .25s; }
+  #caption.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .tldr { position:absolute; width:270px; padding:13px 15px; border-radius:13px; z-index:4;
+    background:rgba(14,18,22,.86); border:1px solid rgba(255,204,110,.5);
+    box-shadow:0 16px 50px rgba(0,0,0,.55), 0 0 30px rgba(255,196,90,.22);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    opacity:0; transform:scale(.9); transition:opacity .3s, transform .3s; pointer-events:none; }
+  .tldr.show { opacity:1; transform:scale(1); }
+  .tldr b { display:block; font-family:"SF Mono",ui-monospace,monospace; font-size:10.5px;
+    letter-spacing:.14em; color:#ffcf7d; margin-bottom:6px; }
+  .tldr p { font-size:11px; line-height:1.55; color:#e8dfc8; }
+  #legend { position:fixed; left:20px; bottom:20px; z-index:5; pointer-events:none;
+    font-family:"SF Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.09em;
+    line-height:2; color:#8fd8c2; background:rgba(8,14,18,.74); border:1px solid rgba(125,255,217,.22);
+    border-radius:12px; padding:9px 15px; }
+  #legend b { color:#7dffd9; font-weight:600; }
+  #ui { position:fixed; z-index:5; left:0; right:0; top:0; display:flex; align-items:center;
+        gap:14px; padding:14px 20px; pointer-events:none; }
+  #ui .chip { pointer-events:auto; font-family:"SF Mono",ui-monospace,monospace; font-size:11px;
+        letter-spacing:.14em; padding:8px 16px; border-radius:99px; cursor:pointer; user-select:none;
+        color:#7dffd9; background:rgba(10,16,20,.7); border:1px solid rgba(125,255,217,.35); }
+  #ui .chip.off { color:#8a97a0; border-color:rgba(255,255,255,.14); }
+  #title { font-family:"SF Mono",ui-monospace,monospace; color:#e8fff7; font-size:13px; letter-spacing:.3em; }
+  #status { margin-left:auto; font-family:"SF Mono",ui-monospace,monospace; font-size:10.5px;
+            letter-spacing:.12em; color:#9fb4ab; text-shadow:0 1px 4px rgba(0,0,0,.8); }
+  #dock { position:fixed; right:0; top:10%; bottom:10%; width:74px; z-index:2; pointer-events:none;
+          border-left:1px dashed rgba(240,200,100,.3); background:linear-gradient(270deg, rgba(240,200,100,.07), transparent); }
+  #dock span { position:absolute; top:50%; right:26px; transform:rotate(90deg) translateX(-50%); transform-origin:right;
+          font-family:"SF Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.4em; color:rgba(240,200,100,.6); }
+  #reader { position:fixed; inset:0; z-index:6; display:none; align-items:center; justify-content:center;
+            background:rgba(4,6,9,.6); backdrop-filter:blur(5px); }
+  #reader .pane { width:min(680px, 82vw); max-height:74vh; overflow:auto; padding:34px 40px;
+            border-radius:20px; background:rgba(12,18,24,.94); border:1px solid rgba(125,255,217,.45);
+            box-shadow:0 30px 90px rgba(0,0,0,.7); }
+  #reader h2 { font-family:"SF Mono",ui-monospace,monospace; font-size:17px; letter-spacing:.12em;
+            color:#a9ffe6; text-transform:uppercase; margin-bottom:16px; }
+  #reader pre { font-family:-apple-system,"Segoe UI",sans-serif; font-size:14px; line-height:1.75;
+            color:#dce8e4; white-space:pre-wrap; }
+  #reader .hint { margin-top:20px; font-family:"SF Mono",ui-monospace,monospace; font-size:10px;
+            letter-spacing:.2em; color:#5a6b62; }
+  #dbg { position:fixed; left:20px; bottom:18px; z-index:6; display:none; pointer-events:none;
+         font-family:"SF Mono",ui-monospace,monospace; font-size:10.5px; line-height:1.8;
+         color:#7dffd9; background:rgba(8,12,16,.85); border:1px solid rgba(125,255,217,.3);
+         border-radius:10px; padding:10px 14px; white-space:pre; }
+  #perm { position:fixed; inset:0; z-index:7; display:none; align-items:center; justify-content:center;
+          background:rgba(5,7,10,.86); }
+  #perm .box { max-width:420px; text-align:center; color:#c9d6d2; font-size:13.5px; line-height:1.7;
+          background:rgba(14,20,26,.9); border:1px solid rgba(125,255,217,.3); border-radius:16px; padding:28px 30px; }
+  #perm .box b { color:#7dffd9; }

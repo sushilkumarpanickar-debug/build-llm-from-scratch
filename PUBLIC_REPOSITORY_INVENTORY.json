@@ -1,0 +1,917 @@
+[
+  {
+    "name": "About-Me",
+    "html_url": "https://github.com/zubair-trabzada/About-Me",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "ai-ads-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-ads-claude",
+    "description": "AI-powered advertising strategy engine for Claude Code. Build complete ad strategies, generate platform-specific copy (Google, Meta, LinkedIn, TikTok, YouTube, Pinterest), design campaign funnels, allocate budgets, and produce professional PDF reports. 15 skills, 5 parallel agents.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "Anthropic API",
+      "API credentials",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-agency-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-agency-claude",
+    "description": "AI Agency Command Center for Claude Code \u2014 orchestrates 5 AI teams (Marketing, Sales, Legal, Reputation, GEO/SEO) into a unified zero-employee agency. 9 skills, 5 parallel agents, composite scoring, and professional PDF reports.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Selected for DAKSH adaptation"
+  },
+  {
+    "name": "ai-crypto-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-crypto-claude",
+    "description": "AI crypto research engine for Claude Code. Analyze tokens across on-chain, tokenomics, sentiment, technical & fundamental dimensions. DeFi analysis, narrative tracking, token screening, PDF reports. 15 skills, 5 agents. Research only \u2014 not financial advice.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "Anthropic API",
+      "API credentials",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-finance-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-finance-claude",
+    "description": "AI personal finance & financial planning engine for Claude Code. Analyze cash flow, debt, investments, retirement & protection across 5 dimensions. FIRE calculator, tax optimization, budget planning, PDF financial plans. 14 skills, 5 agents. Not financial advice.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Selected for DAKSH adaptation"
+  },
+  {
+    "name": "ai-legal-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-legal-claude",
+    "description": "AI Legal Assistant skill for Claude Code. Contract review, risk analysis, NDA generation, compliance auditing, negotiation strategy, and PDF reports \u2014 14 skills, 5 parallel agents. If you want to learn how to sell this to real businesses, check out the Skool community",
+    "default_branch": "main",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "Anthropic API",
+      "API credentials",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-marketing-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-marketing-claude",
+    "description": "AI Marketing Suite for Claude Code. 15 marketing skills with parallel subagents \u2014 audit any website, generate copy, email sequences, ad campaigns, content calendars, competitive intelligence, and client-ready PDF reports.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-proposal-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-proposal-claude",
+    "description": "AI proposal-writing & deal-closing engine for Claude Code. Research a prospect, price the engagement (3-tier + ROI), define scope, pre-handle objections & generate client-ready PDF proposals. 14 skills, 5 parallel agents. Auto-builds from your GEO/SEO/reputation audit reports.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-realestate-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-realestate-claude",
+    "description": "AI real estate research engine for Claude Code. Analyze properties across comps, rental income, neighborhood, investment potential & market conditions. Residential, commercial, flip, BRRRR analysis + PDF reports. 15 skills, 5 agents. Not investment advice.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-recruiter-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-recruiter-claude",
+    "description": "AI recruiting & hiring engine for Claude Code. Job description optimization, batch resume screening, interview frameworks, salary benchmarking, offer letters, onboarding plans & PDF reports. 14 skills, 5 parallel agents. Recruiters charge $15-$30K per placement.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-reputation-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-reputation-claude",
+    "description": "AI Reputation Manager for Claude Code. Analyze online reviews, score brand sentiment, benchmark against competitors, generate review responses, create crisis playbooks, and produce PDF reputation reports \u2014 14 skills, 5 parallel agents.",
+    "default_branch": "main",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "Anthropic API",
+      "API credentials",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-restaurant-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-restaurant-claude",
+    "description": "AI restaurant marketing & operations engine for Claude Code. Multi-platform review analysis, menu engineering, local SEO, social content calendars, ad copy & PDF reports. 14 skills, 5 parallel agents. Restaurant marketing agencies charge $3-$10K/mo for what this does in minutes.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-sales-team-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-sales-team-claude",
+    "description": "AI-powered sales team for Claude Code. Research prospects, qualify leads (BANT + MEDDIC), find decision makers, generate outreach sequences, prepare for meetings, write proposals, and produce PDF pipeline reports \u2014 14 skills, 5 parallel agents.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-trading-claude",
+    "html_url": "https://github.com/zubair-trabzada/ai-trading-claude",
+    "description": "AI trading research engine for Claude Code. Analyze stocks (technical, fundamental, sentiment, risk, thesis), options strategies, sector rotation, portfolio analysis, and PDF reports. 16 skills, 5 parallel agents. Research tool only \u2014 not financial advice.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "Anthropic API",
+      "React",
+      "API credentials",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "ai-trading-hermes",
+    "html_url": "https://github.com/zubair-trabzada/ai-trading-hermes",
+    "description": null,
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "React",
+      "API credentials",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "api",
+    "html_url": "https://github.com/zubair-trabzada/api",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "api-practice",
+    "html_url": "https://github.com/zubair-trabzada/api-practice",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "authenticate-passport",
+    "html_url": "https://github.com/zubair-trabzada/authenticate-passport",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "Bootstrap-Cat-App",
+    "html_url": "https://github.com/zubair-trabzada/Bootstrap-Cat-App",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "brain-map",
+    "html_url": "https://github.com/zubair-trabzada/brain-map",
+    "description": "Turn any folder of markdown notes into an interactive knowledge graph \u2014 zero dependencies",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "Python"
+    ],
+    "decision": "Selected for DAKSH adaptation"
+  },
+  {
+    "name": "budget",
+    "html_url": "https://github.com/zubair-trabzada/budget",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "chatroom-socket.io",
+    "html_url": "https://github.com/zubair-trabzada/chatroom-socket.io",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "contacts-app",
+    "html_url": "https://github.com/zubair-trabzada/contacts-app",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "cryptoCummunity",
+    "html_url": "https://github.com/zubair-trabzada/cryptoCummunity",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "CS-Fundamentals-Practice",
+    "html_url": "https://github.com/zubair-trabzada/CS-Fundamentals-Practice",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "dataforseo-claude",
+    "html_url": "https://github.com/zubair-trabzada/dataforseo-claude",
+    "description": "SEO Agency Killer for Claude Code \u2014 powered by DataForSEO. 13 skills + 5 subagents for keyword research, rank tracking, backlink audits, technical crawls, competitor analysis, and PDF reporting. One-command install.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "devsocial",
+    "html_url": "https://github.com/zubair-trabzada/devsocial",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React",
+      "MongoDB"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "ethereum-kickstarter-app",
+    "html_url": "https://github.com/zubair-trabzada/ethereum-kickstarter-app",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Specialist demo; outside current scope"
+  },
+  {
+    "name": "ethereum-lottery-app",
+    "html_url": "https://github.com/zubair-trabzada/ethereum-lottery-app",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Specialist demo; outside current scope"
+  },
+  {
+    "name": "ethereum-lottery-app-react",
+    "html_url": "https://github.com/zubair-trabzada/ethereum-lottery-app-react",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React",
+      "Node.js"
+    ],
+    "decision": "Specialist demo; outside current scope"
+  },
+  {
+    "name": "FizzBuzz",
+    "html_url": "https://github.com/zubair-trabzada/FizzBuzz",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "freshprince",
+    "html_url": "https://github.com/zubair-trabzada/freshprince",
+    "description": "Fresh Prince Project",
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "Front-end-Developer-Interview-Questions",
+    "html_url": "https://github.com/zubair-trabzada/Front-end-Developer-Interview-Questions",
+    "description": "A list of helpful front-end related questions you can use to interview potential candidates, test yourself or completely ignore.",
+    "default_branch": "master",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "fullstack-blockchain-app",
+    "html_url": "https://github.com/zubair-trabzada/fullstack-blockchain-app",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [],
+    "decision": "Specialist demo; outside current scope"
+  },
+  {
+    "name": "geo-seo-claude",
+    "html_url": "https://github.com/zubair-trabzada/geo-seo-claude",
+    "description": "GEO-first SEO skill for Claude Code. Comprehensive AI search optimization for any website \u2014 citability scoring, AI crawler analysis, brand authority, schema markup, platform-specific optimization, and PDF reports.  If you want learn how to sell this to real businesses, check out the skool community",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "ReportLab",
+      "Python"
+    ],
+    "decision": "Candidate business task module"
+  },
+  {
+    "name": "holo-gestures",
+    "html_url": "https://github.com/zubair-trabzada/holo-gestures",
+    "description": "Control your notes with your hands in mid-air, through your webcam. Pinch, throw and stretch note cards; grab real Smithsonian 3D scans and pull them apart. Runs 100% on your machine \u2014 no cloud, no API keys. Built with Claude Code.",
+    "default_branch": "main",
+    "license_review": "MIT verified",
+    "readme_found": true,
+    "dependency_signals": [
+      "MediaPipe",
+      "API credentials",
+      "Python"
+    ],
+    "decision": "Selected for DAKSH adaptation"
+  },
+  {
+    "name": "Hot-or-Cold",
+    "html_url": "https://github.com/zubair-trabzada/Hot-or-Cold",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "instaMovie",
+    "html_url": "https://github.com/zubair-trabzada/instaMovie",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "javascriptTodoApp",
+    "html_url": "https://github.com/zubair-trabzada/javascriptTodoApp",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "Karma-Page",
+    "html_url": "https://github.com/zubair-trabzada/Karma-Page",
+    "description": "Karma Page project",
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "KnowMe",
+    "html_url": "https://github.com/zubair-trabzada/KnowMe",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "meal_calculator",
+    "html_url": "https://github.com/zubair-trabzada/meal_calculator",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "mongodb-shopping-list",
+    "html_url": "https://github.com/zubair-trabzada/mongodb-shopping-list",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "Node_js",
+    "html_url": "https://github.com/zubair-trabzada/Node_js",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "npm-build-system",
+    "html_url": "https://github.com/zubair-trabzada/npm-build-system",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "omdb-api",
+    "html_url": "https://github.com/zubair-trabzada/omdb-api",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "photo-search",
+    "html_url": "https://github.com/zubair-trabzada/photo-search",
+    "description": "Live demo of photo-search:",
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "photomap",
+    "html_url": "https://github.com/zubair-trabzada/photomap",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "pictionary",
+    "html_url": "https://github.com/zubair-trabzada/pictionary",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "pig-game",
+    "html_url": "https://github.com/zubair-trabzada/pig-game",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "pirateBartender-OOP",
+    "html_url": "https://github.com/zubair-trabzada/pirateBartender-OOP",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "Portfolio",
+    "html_url": "https://github.com/zubair-trabzada/Portfolio",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "Quiz-App",
+    "html_url": "https://github.com/zubair-trabzada/Quiz-App",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-blog-post",
+    "html_url": "https://github.com/zubair-trabzada/react-blog-post",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-boardgame",
+    "html_url": "https://github.com/zubair-trabzada/react-boardgame",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-charts",
+    "html_url": "https://github.com/zubair-trabzada/react-charts",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-emails",
+    "html_url": "https://github.com/zubair-trabzada/react-emails",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-finalApp",
+    "html_url": "https://github.com/zubair-trabzada/react-finalApp",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-js",
+    "html_url": "https://github.com/zubair-trabzada/react-js",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-myportfolio",
+    "html_url": "https://github.com/zubair-trabzada/react-myportfolio",
+    "description": "Live demo",
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-router",
+    "html_url": "https://github.com/zubair-trabzada/react-router",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-test-gallery",
+    "html_url": "https://github.com/zubair-trabzada/react-test-gallery",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-trello",
+    "html_url": "https://github.com/zubair-trabzada/react-trello",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-weather-app",
+    "html_url": "https://github.com/zubair-trabzada/react-weather-app",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "react-youtube-app",
+    "html_url": "https://github.com/zubair-trabzada/react-youtube-app",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "redux-booklist",
+    "html_url": "https://github.com/zubair-trabzada/redux-booklist",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "redux-hot-cold",
+    "html_url": "https://github.com/zubair-trabzada/redux-hot-cold",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "redux-track-repositories",
+    "html_url": "https://github.com/zubair-trabzada/redux-track-repositories",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "reminderApp",
+    "html_url": "https://github.com/zubair-trabzada/reminderApp",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "scroll-cinematic-claude",
+    "html_url": "https://github.com/zubair-trabzada/scroll-cinematic-claude",
+    "description": "Award-winning 3D scroll websites from ONE prompt \u2014 Claude Code + Higgsfield MCP. Generates cinematic hero shots & 3D clips (360\u00b0 spins, fly-throughs, explosions), slices them into scroll-scrubbed frames, and builds a polished branded site. Works for any product, portfolio, contractor, restaurant or agency. One-command install.",
+    "default_branch": "main",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "Claude Code",
+      "Higgsfield",
+      "React"
+    ],
+    "decision": "Media generation; cost review required"
+  },
+  {
+    "name": "Shopping-List",
+    "html_url": "https://github.com/zubair-trabzada/Shopping-List",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "shopping-list-node",
+    "html_url": "https://github.com/zubair-trabzada/shopping-list-node",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "solidity-smart-contracts",
+    "html_url": "https://github.com/zubair-trabzada/solidity-smart-contracts",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Specialist demo; outside current scope"
+  },
+  {
+    "name": "Solving-Algorithms",
+    "html_url": "https://github.com/zubair-trabzada/Solving-Algorithms",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "StackExchangeAJAX",
+    "html_url": "https://github.com/zubair-trabzada/StackExchangeAJAX",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "streetfighter",
+    "html_url": "https://github.com/zubair-trabzada/streetfighter",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "tic-tac-toe",
+    "html_url": "https://github.com/zubair-trabzada/tic-tac-toe",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "web-developers-toolkit",
+    "html_url": "https://github.com/zubair-trabzada/web-developers-toolkit",
+    "description": "A comprehensive list of tools, templates, workflows, videos, cheat sheets and software useful for future web developers",
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "youtube-api",
+    "html_url": "https://github.com/zubair-trabzada/youtube-api",
+    "description": null,
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": false,
+    "dependency_signals": [],
+    "decision": "Background/reference"
+  },
+  {
+    "name": "youtube-app",
+    "html_url": "https://github.com/zubair-trabzada/youtube-app",
+    "description": "Live demo of the youtube-app:",
+    "default_branch": "master",
+    "license_review": "No root license retrieved",
+    "readme_found": true,
+    "dependency_signals": [
+      "React"
+    ],
+    "decision": "Background/reference"
+  }
+]

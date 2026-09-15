@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DAKSH Knowledge Graph</title>
+<link rel="stylesheet" href="/brain-map.css">
+</head>
+<body>
+<canvas id="c" aria-label="Interactive workspace graph"></canvas><div id="detail" role="status">Select a node to inspect it. Double-click to open its workspace.</div>
+<div id="legend"></div>
+<div id="bar">
+  <span id="count">0 notes</span>
+  <input id="q" placeholder="Search… (Enter)">
+  <button id="open-node" disabled>Open node</button>
+  <button id="re">⟲ Replay</button>
+</div>
+<div id="signature"><img src="/snns_emblem.png" alt="Peacock phoenix emblem"><b>DAKSH</b><span>PRIVATE KNOWLEDGE GRAPH</span></div>
+<script src="/d3.min.js"></script>
+
+<script src="/brain-map.js"></script>
+</body>
+</html>

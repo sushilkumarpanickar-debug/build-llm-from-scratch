@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import AppKit
 
 struct DAKSHWebView: NSViewRepresentable {
     let url: URL
@@ -30,7 +31,7 @@ struct DAKSHWebView: NSViewRepresentable {
         nsView.load(URLRequest(url: url))
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
         var lastReloadID: UUID?
 
         @available(macOS 12.0, *)
@@ -42,7 +43,22 @@ struct DAKSHWebView: NSViewRepresentable {
             decisionHandler: @escaping (WKPermissionDecision) -> Void
         ) {
             let localOrigin = origin.host == "127.0.0.1" || origin.host == "localhost"
-            decisionHandler(localOrigin ? .grant : .deny)
+            guard localOrigin else { decisionHandler(.deny); return }
+            decisionHandler(type == .microphone ? .grant : .prompt)
+        }
+
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            decisionHandler(navigationAction.shouldPerformDownload ? .download : .allow)
+        }
+
+        func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+            download.delegate = self
+        }
+
+        func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
+            let panel = NSSavePanel()
+            panel.nameFieldStringValue = suggestedFilename
+            panel.begin { result in completionHandler(result == .OK ? panel.url : nil) }
         }
     }
 }

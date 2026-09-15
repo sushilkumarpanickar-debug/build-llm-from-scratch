@@ -35,9 +35,44 @@ class WorkspaceTest(unittest.TestCase):
     def post(self, path, data):
         return self.client.post(path, json=data, headers=self.headers)
 
+    def test_local_workflow_is_scoped_and_cannot_select_arbitrary_files(self):
+        catalog = self.client.get('/api/local-skills').json()['skills']
+        self.assertTrue(any(x['name']=='finance-budget' for x in catalog))
+        invalid = self.post('/api/local-skills/run', {'skill':'../../server.py', 'evidence':'test'})
+        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(self.client.post('/api/local-skills/run', json={'skill':catalog[0]['id'],'evidence':'test'}).status_code, 403)
+        with patch('local_workspace.server.ollama_client.chat', return_value='Evidence gaps: expenses not supplied.') as model:
+            result = self.post('/api/local-skills/run', {'scope':'SNNS Smartact','skill':catalog[0]['id'],'evidence':'Net monthly income is INR 100000.'})
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.json()['scope'], 'SNNS Smartact')
+        messages = model.call_args.args[1]
+        self.assertIn('untrusted reference material', messages[0]['content'])
+        self.assertEqual(messages[1]['content'], 'Net monthly income is INR 100000.')
+        personal = self.client.get('/api/state?scope=Personal').json()
+        snns = self.client.get('/api/state?scope=SNNS%20Smartact').json()
+        self.assertFalse(any('100000' in x['content'] for x in personal['messages']))
+        self.assertTrue(any('100000' in x['content'] for x in snns['messages']))
+        report = self.post('/api/local-skills/export', {'scope':'SNNS Smartact','report':'# Test report\nIncome INR 100000. <not executable markup>'})
+        self.assertEqual(report.status_code, 200)
+        self.assertTrue(report.content.startswith(b'%PDF-'))
+        from pypdf import PdfReader
+        extracted = '\n'.join(page.extract_text() for page in PdfReader(io.BytesIO(report.content)).pages)
+        self.assertIn('INR 100000', extracted)
+        self.assertIn('<not executable markup>', extracted)
+
     def test_assets_health_and_host_protection(self):
         page = self.client.get("/")
         self.assertEqual(page.status_code, 200)
+        graph = self.client.get('/brain-map.html')
+        self.assertEqual(graph.status_code, 200)
+        self.assertIn("frame-ancestors 'self'", graph.headers['content-security-policy'])
+        self.assertIn("frame-ancestors 'none'", page.headers['content-security-policy'])
+        self.assertNotIn('https://cdn.', graph.text)
+        self.assertEqual(self.client.get('/brain-map.js').status_code, 200)
+        self.assertEqual(self.client.get('/d3.min.js', headers={'host':'untrusted.example'}).status_code, 403)
+        self.assertEqual(self.client.get('/holo/holo.html').status_code, 200)
+        self.assertEqual(self.client.get('/holo/%2e%2e/%2e%2e/server.py').status_code, 404)
+        self.assertEqual(self.client.get('/holo/vendor/hand_landmarker.task', headers={'host':'untrusted.example'}).status_code, 403)
         self.assertIn("AI CORE OVERVIEW", page.text)
         self.assertIn("LIVE INTELLIGENCE FEED", page.text)
         self.assertIn("MISSION TIMELINE", page.text)

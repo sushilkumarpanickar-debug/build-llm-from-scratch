@@ -1,0 +1,37 @@
+
+  html, body { margin: 0; height: 100%; background: #07090d; overflow: hidden;
+    font-family: -apple-system, "SF Pro Text", Inter, sans-serif; }
+  canvas { display: block; cursor: grab; }
+  canvas.drag { cursor: grabbing; }
+  #bar {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+    display: flex; gap: 9px; align-items: center; z-index: 10;
+    font-size: 13px; color: #9ca3af; background: rgba(10,13,18,.85);
+    border: 1px solid #1f2937; border-radius: 999px; padding: 8px 14px;
+    user-select: none; white-space: nowrap;
+  }
+  #bar input {
+    background: #0d1320; color: #e5e7eb; border: 1px solid #283548;
+    border-radius: 999px; padding: 6px 12px; font: inherit; outline: none; width: 150px;
+  }
+  #bar button {
+    background: #111827; color: #d1d5db; border: 1px solid #283548;
+    border-radius: 999px; padding: 6px 12px; font: inherit; cursor: pointer;
+  }
+  #bar button:hover { background: #1c2a3f; }
+  #count { color: #34d399; font-variant-numeric: tabular-nums; }
+  #legend {
+    position: fixed; right: 16px; top: 16px; z-index: 10;
+    font-size: 12.5px; color: #cbd5e1; background: rgba(10,13,18,.85);
+    border: 1px solid #1f2937; border-radius: 12px; padding: 10px 14px; user-select: none;
+  }
+  #legend .row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+  #legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  #upsell {
+    position: fixed; left: 16px; bottom: 16px; z-index: 10;
+    font-size: 12.5px; color: #cbd5e1; background: rgba(10,13,18,.9);
+    border: 1px solid #34d399; border-radius: 12px; padding: 10px 14px;
+    text-decoration: none; line-height: 1.5; max-width: 280px;
+  }
+  #upsell b { color: #34d399; }
+#signature {position:fixed;left:18px;top:16px;color:#67e8f9;display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:2px} #signature img{width:46px;height:46px;object-fit:contain} #signature span{color:#94a3b8;font-size:10px} #detail{position:fixed;left:18px;bottom:80px;color:#cbd5e1;font-size:13px;max-width:360px;white-space:pre-wrap;background:#0c1424dd;padding:12px;border-left:2px solid #22d3ee;border-radius:8px;pointer-events:none} @media(max-width:600px){#signature span{display:none} #legend{top:75px} #bar{bottom:12px;gap:4px;padding:6px} #bar input{width:95px} #detail{font-size:11px;max-width:240px}}
