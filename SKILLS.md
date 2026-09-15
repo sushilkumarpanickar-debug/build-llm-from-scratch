@@ -28,3 +28,18 @@ The user also authorized `holo-gestures`, `ai-finance-claude`, and `ai-agency-cl
 
 ## Universal operating protocol — 15 September 2026
 User requested a reusable understanding/execution framework and other public-repository review. DAKSH-OP-001 is implemented in local chat/task prompt guidance and an authenticated task-contract builder. This grants no new tools or external actions. Public alternatives in PUBLIC_CAPABILITY_REVIEW.md are reference-reviewed, not installed. Portable adapters do not imply cross-platform synchronization.
+
+## Public component implementation approval — 16 September 2026
+
+Source: user message, “i approve the repos which you have selected for implementation”. This supersedes reference-only status for the selected components below within DAKSH's local-first, no-paid-inference requirements. Approval is permission to implement, not evidence of installation or readiness.
+
+| Component | Implementation selection and boundary | Current status |
+|---|---|---|
+| LangGraph | Selected for future durable local workflows/checkpoints and human approval; preserve scoped SQLite as authoritative application state. Disable hosted tracing by default. | Approved; not installed or integrated. |
+| Microsoft Playwright MCP | Selected as the first bounded browser worker; isolated profile, narrow tasks, actual receipts, existing approval handling. | Approved; not installed or integrated into DAKSH. |
+| whisper.cpp | Approved for local Mac benchmarking and integration only if it improves measured voice reliability/latency; preserve faster-whisper until then. | Approved evaluation/implementation candidate; not installed. |
+| Marker | Approved for an optional local scanned/layout-heavy document ingestion adapter, subject to current code/model license and Mac resource compatibility. | Approved evaluation/implementation candidate; not installed. |
+
+Microsoft Agent Framework and browser-use remain alternatives to the selected orchestration/browser components, not additional concurrent runtimes. OpenHands is an optional future isolated coding worker. Open Interpreter remains an execution-pattern reference, Mem0 a retrieval reference, and Open WebUI a UI reference. Their listing does not imply that all ten repositories should be installed or replace working DAKSH components. Review each pinned release/license and use the existing wrapper pattern before adoption.
+
+This approval does not authorize paid/cloud inference, unrestricted shell access, automatic sending, financial transactions, statutory submissions, or copying non-public JARVIS code. Existing account/action-specific approval boundaries remain in force.

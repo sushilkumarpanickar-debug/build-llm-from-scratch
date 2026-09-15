@@ -39,3 +39,7 @@ The description separates model from mechanics: notes/chat/vision use the stated
 5. Add opt-in local vision/focus controls and validated business document modules as separate implementations.
 
 No new third-party installer, hosted inference, account permission, broad terminal access or automatic external action was enabled by this review.
+
+## Implementation approval — 16 September 2026
+
+The user approved the selected repositories for implementation. LangGraph and Microsoft Playwright MCP are the selected orchestration/browser direction; whisper.cpp and Marker are approved conditional adapters after benchmarking/license checks. Other listed projects remain alternatives or references as recorded in SKILLS.md. No new component was installed by recording this approval.
